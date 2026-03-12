@@ -245,6 +245,15 @@ async function getUserFromRequest(request, env) {
   return verifyToken(token, env);
 }
 
+// ── Schedule helper (read from D1 kv, fallback to defaults) ───
+async function getSchedule(db) {
+  const row = await db.prepare("SELECT value FROM kv WHERE key = 'trash_schedule'").first();
+  if (row && row.value) {
+    try { return JSON.parse(row.value); } catch { /* fallback */ }
+  }
+  return TRASH_SCHEDULE;
+}
+
 // ── Request Router ───────────────────────────────────────────
 async function handleRequest(request, env, ctx) {
   const url = new URL(request.url);
@@ -422,6 +431,44 @@ async function handleRequest(request, env, ctx) {
     }, env);
     return json({ success: true, message: 'Test notification sent to all subscribers' });
   }
+
+  // ── GET /admin/schedule ─────────────────────────────────
+  if (method === 'GET' && path === '/admin/schedule') {
+    const schedule = await getSchedule(db);
+    return json({ schedule });
+  }
+
+  // ── PUT /admin/schedule ─────────────────────────────────
+  if (method === 'PUT' && path === '/admin/schedule') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const body = await request.json();
+    const schedule = body.schedule;
+    if (!schedule || typeof schedule !== 'object') return json({ error: 'schedule required' }, 400);
+    await db.prepare(
+      "INSERT INTO kv (key, value) VALUES ('trash_schedule', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+    ).bind(JSON.stringify(schedule)).run();
+    return json({ success: true });
+  }
+
+  // ── DELETE /admin/announcements/:id ────────────────────
+  const annDelMatch = path.match(/^\/admin\/announcements\/(\d+)$/);
+  if (method === 'DELETE' && annDelMatch) {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const id = parseInt(annDelMatch[1], 10);
+    await db.prepare('DELETE FROM announcements WHERE id = ?').bind(id).run();
+    return json({ success: true });
+  }
+
+  // ── DELETE /admin/announcements (clear all) ───────────
+  if (method === 'DELETE' && path === '/admin/announcements') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    await db.prepare('DELETE FROM announcements').run();
+    return json({ success: true });
+  }
+
   // ── POST /subscribe ────────────────────────────────────
   if (method === 'POST' && path === '/subscribe') {
     const body = await request.json();
@@ -459,8 +506,9 @@ export default {
     // Auto-delete completed tasks older than 24 hours
     await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-24 hours')").run();
 
+    const schedule = await getSchedule(db);
     const day = new Date().getDay(); // 0‑6
-    const username = TRASH_SCHEDULE[day];
+    const username = schedule[day];
     if (!username) return;
 
     await targetedPush(db, username, {

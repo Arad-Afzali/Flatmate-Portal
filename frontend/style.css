@@ -346,11 +346,33 @@ body {
   border-radius: 10px;
 }
 
-/* ── Trash Schedule Table ──────────────────── */
-.schedule-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
-.schedule-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: .4rem .5rem; border-bottom: 2px solid var(--border); }
-.schedule-table td { padding: .5rem; border-bottom: 1px solid var(--border); }
-.schedule-table tr.today td { background: #eef2ff; font-weight: 700; }
+/* ── Trash Schedule (pills) ────────────── */
+.trash-card { padding: .85rem 1rem; }
+.trash-card h2 { margin-bottom: .5rem; font-size: .9rem; }
+.trash-pills {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+.trash-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: .3rem .55rem;
+  border-radius: 8px;
+  background: var(--bg);
+  min-width: 52px;
+  font-size: .72rem;
+  line-height: 1.3;
+}
+.trash-pill.today {
+  background: #eef2ff;
+  border: 1.5px solid var(--primary);
+  font-weight: 700;
+}
+.trash-pill.empty .tp-name { color: var(--text-muted); }
+.tp-day { font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: .65rem; }
+.tp-name { font-weight: 600; color: var(--text); }
 
 /* ── Modal ─────────────────────────────────── */
 .modal-overlay {
@@ -386,7 +408,82 @@ body {
   border: 1.5px solid #4338ca;
   background: #0d0d1f;
   color: #e0e7ff;
+  border-radius: var(--radius);
+  overflow: hidden;
 }
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .65rem 1rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: .85rem;
+  color: #a5b4fc;
+  user-select: none;
+}
+.admin-arrow { font-size: .7rem; transition: transform .2s; }
+.admin-body { padding: .5rem 1rem 1rem; }
+.admin-subtitle {
+  color: #a5b4fc;
+  font-size: .8rem;
+  font-weight: 600;
+  margin: .85rem 0 .4rem;
+}
+.admin-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: .35rem;
+}
+.asg-row {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+.asg-label {
+  font-size: .75rem;
+  font-weight: 600;
+  width: 32px;
+  color: #a5b4fc;
+}
+.asg-select {
+  flex: 1;
+  padding: .3rem .4rem;
+  border: 1px solid #3730a3;
+  border-radius: 6px;
+  background: #1e1b4b;
+  color: #e0e7ff;
+  font-size: .78rem;
+}
+.admin-ann-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+.admin-ann-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .35rem .55rem;
+  background: #1e1b4b;
+  border-radius: 6px;
+  font-size: .78rem;
+}
+.admin-ann-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-admin-sm {
+  background: none;
+  border: 1px solid #6366f1;
+  color: #e0e7ff;
+  border-radius: 4px;
+  padding: .15rem .4rem;
+  font-size: .7rem;
+  cursor: pointer;
+  margin-left: .35rem;
+  flex-shrink: 0;
+}
+.btn-admin-danger { border-color: #991b1b !important; color: #fca5a5 !important; }
+.btn-admin-danger:hover { background: #450a0a !important; }
 .admin-card h2 { color: #a5b4fc; }
 
 .admin-row {

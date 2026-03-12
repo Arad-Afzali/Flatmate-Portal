@@ -9,19 +9,21 @@ const ADMIN_USER = 'Arad';
 
 const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
 
-// Trash schedule (same mapping as the Worker — keep in sync)
-// Only 4 active days; remaining days map to null (no reminder).
-const TRASH_SCHEDULE = {
-  0: 'Aien',    // Sunday
+// Trash schedule — fetched from server for admin editing
+// Fallback used if API not yet available
+let trashSchedule = {
   1: 'Ali',     // Monday
   2: null,      // Tuesday
   3: 'Amir',    // Wednesday
   4: 'Gokol',   // Thursday
   5: 'Sattar',  // Friday
   6: 'Arad',    // Saturday
+  0: 'Aien',    // Sunday
 };
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+// Mon-Sun ordering for display
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 let currentUser = null;
 let authToken = null; // HMAC-signed token from the Worker
@@ -135,7 +137,10 @@ function showDashboard() {
   const adminSection = document.getElementById('admin-section');
   if (currentUser === ADMIN_USER) {
     adminSection.classList.remove('hidden');
+    document.getElementById('admin-toggle').onclick = toggleAdminPanel;
     document.getElementById('admin-test-btn').onclick = adminTestNotify;
+    document.getElementById('admin-save-schedule').onclick = adminSaveSchedule;
+    document.getElementById('admin-clear-ann').onclick = adminClearAnnouncements;
   } else {
     adminSection.classList.add('hidden');
   }
@@ -172,6 +177,7 @@ function showDashboard() {
   renderTrashSchedule();
   loadItems();
   loadAnnouncements();
+  loadScheduleFromServer();
 }
 
 // ── API Helpers ──────────────────────────────────────────────
@@ -388,19 +394,124 @@ async function saveEdit() {
 
 // ── Trash Schedule ───────────────────────────────────────────
 function renderTrashSchedule() {
-  const tbody = document.querySelector('#trash-schedule tbody');
+  const container = document.getElementById('trash-schedule');
   const today = new Date().getDay();
-
-  // Only render days that have an assigned person
-  tbody.innerHTML = DAY_NAMES.map((day, i) => {
-    const name = TRASH_SCHEDULE[i];
-    if (!name) return '';
-    const cls = i === today ? ' class="today"' : '';
-    return `<tr${cls}><td>${day}</td><td>${escapeHtml(name)}${i === today ? ' ← today' : ''}</td></tr>`;
+  container.innerHTML = DAY_ORDER.map(i => {
+    const name = trashSchedule[i];
+    const isToday = i === today;
+    const label = DAY_NAMES[i];
+    if (!name) return `<div class="trash-pill empty${isToday ? ' today' : ''}">
+      <span class="tp-day">${label}</span><span class="tp-name">—</span></div>`;
+    return `<div class="trash-pill${isToday ? ' today' : ''}">
+      <span class="tp-day">${label}</span><span class="tp-name">${escapeHtml(name)}</span></div>`;
   }).join('');
 }
 
+async function loadScheduleFromServer() {
+  try {
+    const data = await api('/admin/schedule');
+    if (data.schedule) {
+      trashSchedule = data.schedule;
+      renderTrashSchedule();
+      if (currentUser === ADMIN_USER) renderAdminScheduleEditor();
+    }
+  } catch (e) { /* use defaults */ }
+}
+
 // ── Admin Functions (Arad only) ──────────────────────────────
+function toggleAdminPanel() {
+  const body = document.getElementById('admin-body');
+  const arrow = document.getElementById('admin-arrow');
+  body.classList.toggle('hidden');
+  arrow.textContent = body.classList.contains('hidden') ? '▶' : '▼';
+  if (!body.classList.contains('hidden')) {
+    renderAdminScheduleEditor();
+    renderAdminAnnouncements();
+  }
+}
+
+function renderAdminScheduleEditor() {
+  const grid = document.getElementById('admin-schedule-editor');
+  grid.innerHTML = DAY_ORDER.map(i => {
+    const label = DAY_NAMES[i];
+    const val = trashSchedule[i] || '';
+    return `<div class="asg-row">
+      <label class="asg-label">${label}</label>
+      <select class="asg-select" data-day="${i}">
+        <option value="">— none —</option>
+        ${ALLOWED_USERS.map(u => `<option value="${u}"${u === val ? ' selected' : ''}>${u}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+async function adminSaveSchedule() {
+  const selects = document.querySelectorAll('.asg-select');
+  const schedule = {};
+  selects.forEach(s => {
+    schedule[s.dataset.day] = s.value || null;
+  });
+  const btn = document.getElementById('admin-save-schedule');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/admin/schedule`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      trashSchedule = schedule;
+      renderTrashSchedule();
+      showAdminStatus('Schedule saved ✓', 'success');
+    } else {
+      showAdminStatus('Failed: ' + (data.error || 'unknown'), 'error');
+    }
+  } catch (e) { showAdminStatus('Network error', 'error'); }
+  finally { btn.disabled = false; }
+}
+
+function renderAdminAnnouncements() {
+  const list = document.getElementById('admin-announcements');
+  // reuse the loaded data from the broadcast section
+  const items = document.querySelectorAll('#announcements-list .announcement-item');
+  if (!items.length) { list.innerHTML = '<li class="empty-msg">No broadcasts</li>'; return; }
+  // re-fetch to get IDs
+  api('/announcements').then(data => {
+    const anns = data.announcements || [];
+    if (!anns.length) { list.innerHTML = '<li class="empty-msg">No broadcasts</li>'; return; }
+    list.innerHTML = anns.map(a => `
+      <li class="admin-ann-item">
+        <span class="admin-ann-text">${escapeHtml(a.message.slice(0, 60))}${a.message.length > 60 ? '…' : ''}</span>
+        <button class="btn-admin-sm btn-admin-danger" onclick="adminDeleteAnnouncement(${a.id})">✕</button>
+      </li>`).join('');
+  });
+}
+
+async function adminDeleteAnnouncement(id) {
+  try {
+    await fetch(`${API_BASE}/admin/announcements/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    loadAnnouncements();
+    setTimeout(renderAdminAnnouncements, 300);
+  } catch (e) { console.error(e); }
+}
+
+async function adminClearAnnouncements() {
+  if (!confirm('Clear ALL broadcasts?')) return;
+  try {
+    await fetch(`${API_BASE}/admin/announcements`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    loadAnnouncements();
+    setTimeout(renderAdminAnnouncements, 300);
+    showAdminStatus('All broadcasts cleared ✓', 'success');
+  } catch (e) { showAdminStatus('Network error', 'error'); }
+}
+
 async function adminTestNotify() {
   const btn = document.getElementById('admin-test-btn');
   btn.disabled = true;

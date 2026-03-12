@@ -49,12 +49,26 @@
     <main class="container">
 
       <!-- ── Admin Panel (Arad only — hidden for others) ── -->
-      <section class="card admin-card hidden" id="admin-section">
-        <h2>🔐 Admin Panel</h2>
-        <div class="admin-row">
-          <button id="admin-test-btn" class="btn-admin">🔔 Send Test Notification</button>
+      <section class="admin-card hidden" id="admin-section">
+        <div class="admin-header" id="admin-toggle">
+          <span>🔐 Admin</span>
+          <span class="admin-arrow" id="admin-arrow">▶</span>
         </div>
-        <p id="admin-status" class="admin-status hidden"></p>
+        <div class="admin-body hidden" id="admin-body">
+          <div class="admin-row">
+            <button id="admin-test-btn" class="btn-admin">🔔 Test Notification</button>
+          </div>
+
+          <h3 class="admin-subtitle">🗑️ Edit Trash Schedule</h3>
+          <div id="admin-schedule-editor" class="admin-schedule-grid"></div>
+          <button id="admin-save-schedule" class="btn-admin" style="margin-top:.5rem;width:100%">💾 Save Schedule</button>
+
+          <h3 class="admin-subtitle">📢 Manage Broadcasts</h3>
+          <ul id="admin-announcements" class="admin-ann-list"></ul>
+          <button id="admin-clear-ann" class="btn-admin btn-admin-danger" style="margin-top:.5rem;width:100%">🗑 Clear All Broadcasts</button>
+
+          <p id="admin-status" class="admin-status hidden"></p>
+        </div>
       </section>
 
       <!-- ── Broadcast / Announcements ── -->
@@ -65,12 +79,9 @@
       </section>
 
       <!-- ── Trash Schedule ── -->
-      <section class="card">
-        <h2>🗑️ Trash Collection Schedule</h2>
-        <table id="trash-schedule" class="schedule-table">
-          <thead><tr><th>Day</th><th>Responsible</th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <section class="card trash-card">
+        <h2>🗑️ Trash</h2>
+        <div id="trash-schedule" class="trash-pills"></div>
       </section>
 
       <!-- ── Pending ── -->
