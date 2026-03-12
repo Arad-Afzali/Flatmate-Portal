@@ -245,6 +245,15 @@ async function getUserFromRequest(request, env) {
   return verifyToken(token, env);
 }
 
+// ── Activity log helper ──────────────────────────────────────
+async function logActivity(db, username, action, detail) {
+  try {
+    await db.prepare(
+      'INSERT INTO activity_log (username, action, detail) VALUES (?, ?, ?)'
+    ).bind(username, action, detail).run();
+  } catch (e) { console.error('logActivity error:', e); }
+}
+
 // ── Schedule helper (read from D1 kv, fallback to defaults) ───
 async function getSchedule(db) {
   const row = await db.prepare("SELECT value FROM kv WHERE key = 'trash_schedule'").first();
@@ -297,6 +306,7 @@ async function handleRequest(request, env, ctx) {
     const message = (body.message || '').trim().slice(0, 200);
     if (!message) return json({ error: 'message required' }, 400);
     await db.prepare('INSERT INTO announcements (message, sent_by) VALUES (?, ?)').bind(message, user).run();
+    ctx.waitUntil(logActivity(db, user, 'broadcast', message.slice(0, 80)));
     ctx.waitUntil(broadcastPush(db, {
       title: `\uD83D\uDCE2 ${user}`,
       body: message,
@@ -317,13 +327,13 @@ async function handleRequest(request, env, ctx) {
       "SELECT * FROM tasks WHERE status = 'completed' ORDER BY created_at DESC"
     ).all();
 
-    // Leaderboard: count completed items per user
+    // Leaderboard: persistent scores from leaderboard_scores table
     const lb = await db.prepare(
-      "SELECT completed_by AS user, COUNT(*) AS count FROM tasks WHERE status = 'completed' AND completed_by IS NOT NULL GROUP BY completed_by"
+      'SELECT username, score FROM leaderboard_scores'
     ).all();
     const leaderboard = {};
     for (const u of ALLOWED_USERS) leaderboard[u] = 0;
-    for (const row of (lb.results || [])) leaderboard[row.user] = row.count;
+    for (const row of (lb.results || [])) leaderboard[row.username] = row.score;
 
     return json({ pending: pending.results || [], completed: completed.results || [], leaderboard });
   }
@@ -343,6 +353,9 @@ async function handleRequest(request, env, ctx) {
       'INSERT INTO tasks (title, category, is_emergency, requested_by) VALUES (?, ?, ?, ?)'
     ).bind(title, cat, emergency, username).run();
 
+    // Log activity
+    ctx.waitUntil(logActivity(db, username, 'added', title));
+
     // Broadcast notification
     const emoji = emergency ? '🚨' : '📋';
     ctx.waitUntil(broadcastPush(db, {
@@ -361,9 +374,11 @@ async function handleRequest(request, env, ctx) {
     const body = await request.json();
     const { username } = body;
     if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
+    const pickupTask = await db.prepare('SELECT title FROM tasks WHERE id = ?').bind(id).first();
     await db.prepare(
       "UPDATE tasks SET status = 'in_progress', picked_up_by = ? WHERE id = ? AND status = 'pending'"
     ).bind(username, id).run();
+    ctx.waitUntil(logActivity(db, username, 'picked up', pickupTask ? pickupTask.title : `task #${id}`));
     return json({ success: true });
   }
 
@@ -387,6 +402,7 @@ async function handleRequest(request, env, ctx) {
     values.push(id);
     await db.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`).bind(...values).run();
 
+    ctx.waitUntil(logActivity(db, username, 'edited', title || `task #${id}`));
     ctx.waitUntil(broadcastPush(db, {
       title: '✏️ Item Updated',
       body: `${username} updated an item`,
@@ -405,9 +421,20 @@ async function handleRequest(request, env, ctx) {
 
     if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
 
+    // Get title for activity log before updating
+    const taskRow = await db.prepare('SELECT title FROM tasks WHERE id = ?').bind(id).first();
+
     await db.prepare(
       "UPDATE tasks SET status = 'completed', completed_by = ?, completed_at = datetime('now') WHERE id = ?"
     ).bind(username, id).run();
+
+    // Increment persistent leaderboard score
+    await db.prepare(
+      'INSERT INTO leaderboard_scores (username, score) VALUES (?, 1) ON CONFLICT(username) DO UPDATE SET score = score + 1'
+    ).bind(username).run();
+
+    // Log activity
+    ctx.waitUntil(logActivity(db, username, 'completed', taskRow ? taskRow.title : `task #${id}`));
 
     return json({ success: true });
   }
@@ -416,7 +443,11 @@ async function handleRequest(request, env, ctx) {
   const delMatch = path.match(/^\/items\/(\d+)$/);
   if (method === 'DELETE' && delMatch) {
     const id = parseInt(delMatch[1], 10);
+    const delTask = await db.prepare('SELECT title, requested_by FROM tasks WHERE id = ?').bind(id).first();
     await db.prepare('DELETE FROM tasks WHERE id = ?').bind(id).run();
+    // Try to determine who deleted — from query param or fallback
+    const delUser = url.searchParams.get('user') || (delTask ? delTask.requested_by : 'unknown');
+    ctx.waitUntil(logActivity(db, delUser, 'deleted', delTask ? delTask.title : `task #${id}`));
     return json({ success: true });
   }
 
@@ -448,7 +479,53 @@ async function handleRequest(request, env, ctx) {
     await db.prepare(
       "INSERT INTO kv (key, value) VALUES ('trash_schedule', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
     ).bind(JSON.stringify(schedule)).run();
+    ctx.waitUntil(logActivity(db, user, 'schedule updated', 'Trash schedule changed'));
     return json({ success: true });
+  }
+
+  // ── GET /admin/leaderboard ─────────────────────────────
+  if (method === 'GET' && path === '/admin/leaderboard') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const { results } = await db.prepare('SELECT username, score FROM leaderboard_scores').all();
+    const scores = {};
+    for (const u of ALLOWED_USERS) scores[u] = 0;
+    for (const row of (results || [])) scores[row.username] = row.score;
+    return json({ scores });
+  }
+
+  // ── PUT /admin/leaderboard ─────────────────────────────
+  if (method === 'PUT' && path === '/admin/leaderboard') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const body = await request.json();
+    const { username: target, delta } = body;
+    if (!target || !ALLOWED_USERS.includes(target)) return json({ error: 'Valid username required' }, 400);
+    if (typeof delta !== 'number') return json({ error: 'delta must be a number' }, 400);
+    await db.prepare(
+      'INSERT INTO leaderboard_scores (username, score) VALUES (?, MAX(0, ?)) ON CONFLICT(username) DO UPDATE SET score = MAX(0, score + ?)'
+    ).bind(target, delta, delta).run();
+    ctx.waitUntil(logActivity(db, user, 'leaderboard adjusted', `${target} ${delta >= 0 ? '+' : ''}${delta}`));
+    return json({ success: true });
+  }
+
+  // ── DELETE /admin/leaderboard ──────────────────────────
+  if (method === 'DELETE' && path === '/admin/leaderboard') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    await db.prepare('DELETE FROM leaderboard_scores').run();
+    ctx.waitUntil(logActivity(db, user, 'leaderboard reset', 'All scores reset to 0'));
+    return json({ success: true });
+  }
+
+  // ── GET /admin/activity-log ────────────────────────────
+  if (method === 'GET' && path === '/admin/activity-log') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const { results } = await db.prepare(
+      'SELECT id, username, action, detail, created_at FROM activity_log ORDER BY created_at DESC LIMIT 100'
+    ).all();
+    return json({ activities: results || [] });
   }
 
   // ── DELETE /admin/announcements/:id ────────────────────

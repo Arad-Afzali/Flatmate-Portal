@@ -141,6 +141,7 @@ function showDashboard() {
     document.getElementById('admin-test-btn').onclick = adminTestNotify;
     document.getElementById('admin-save-schedule').onclick = adminSaveSchedule;
     document.getElementById('admin-clear-ann').onclick = adminClearAnnouncements;
+    document.getElementById('admin-reset-lb').onclick = adminResetLeaderboard;
   } else {
     adminSection.classList.add('hidden');
   }
@@ -352,7 +353,7 @@ async function completeItem(id) {
 async function deleteItem(id) {
   if (!confirm('Delete this item?')) return;
   try {
-    await api(`/items/${id}`, { method: 'DELETE' });
+    await api(`/items/${id}?user=${encodeURIComponent(currentUser)}`, { method: 'DELETE' });
     loadItems();
   } catch (e) {
     console.error('Delete failed:', e);
@@ -427,6 +428,8 @@ function toggleAdminPanel() {
   if (!body.classList.contains('hidden')) {
     renderAdminScheduleEditor();
     renderAdminAnnouncements();
+    renderAdminLeaderboard();
+    renderAdminActivityLog();
   }
 }
 
@@ -510,6 +513,70 @@ async function adminClearAnnouncements() {
     setTimeout(renderAdminAnnouncements, 300);
     showAdminStatus('All broadcasts cleared ✓', 'success');
   } catch (e) { showAdminStatus('Network error', 'error'); }
+}
+
+// ── Admin Leaderboard Management ─────────────────────────────
+async function renderAdminLeaderboard() {
+  const grid = document.getElementById('admin-leaderboard');
+  try {
+    const res = await fetch(`${API_BASE}/admin/leaderboard`, {
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    const data = await res.json();
+    const scores = data.scores || {};
+    grid.innerHTML = ALLOWED_USERS.map(u => `
+      <div class="admin-lb-row">
+        <span class="admin-lb-name">${escapeHtml(u)}</span>
+        <span class="admin-lb-score">${scores[u] || 0}</span>
+        <button class="btn-admin-sm" onclick="adminAdjustScore('${u}', -1)">−</button>
+        <button class="btn-admin-sm" onclick="adminAdjustScore('${u}', 1)">+</button>
+      </div>`).join('');
+  } catch (e) { grid.innerHTML = '<p class="empty-msg">Failed to load</p>'; }
+}
+
+async function adminAdjustScore(username, delta) {
+  try {
+    await fetch(`${API_BASE}/admin/leaderboard`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, delta }),
+    });
+    renderAdminLeaderboard();
+    loadItems(); // refresh main leaderboard too
+  } catch (e) { showAdminStatus('Network error', 'error'); }
+}
+
+async function adminResetLeaderboard() {
+  if (!confirm('Reset ALL leaderboard scores to 0?')) return;
+  try {
+    await fetch(`${API_BASE}/admin/leaderboard`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    renderAdminLeaderboard();
+    loadItems();
+    showAdminStatus('Leaderboard reset ✓', 'success');
+  } catch (e) { showAdminStatus('Network error', 'error'); }
+}
+
+// ── Admin Activity Log ───────────────────────────────────────
+async function renderAdminActivityLog() {
+  const list = document.getElementById('admin-activity-log');
+  try {
+    const res = await fetch(`${API_BASE}/admin/activity-log`, {
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    const data = await res.json();
+    const activities = data.activities || [];
+    if (!activities.length) { list.innerHTML = '<li class="empty-msg">No activity yet</li>'; return; }
+    list.innerHTML = activities.map(a => `
+      <li class="admin-activity-item">
+        <span class="admin-act-user">${escapeHtml(a.username)}</span>
+        <span class="admin-act-action">${escapeHtml(a.action)}</span>
+        <span class="admin-act-detail">${escapeHtml((a.detail || '').slice(0, 60))}</span>
+        <span class="admin-act-time">${timeAgo(a.created_at)}</span>
+      </li>`).join('');
+  } catch (e) { list.innerHTML = '<li class="empty-msg">Failed to load</li>'; }
 }
 
 async function adminTestNotify() {
