@@ -7,7 +7,7 @@ const API_BASE = 'https://flatmate-portal-worker.holimoli.workers.dev'; // no tr
 const VAPID_PUBLIC_KEY = 'BDbtLlG3btEkaUMeho4kFoh2fou-DZ9P1CydGzmMqE9IMfPsJsVjawIk1yyRHPKjLhNS3ySmdFRwTx_CJyQBU7g';
 const ADMIN_USER = 'Arad';
 
-const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
+const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokul'];
 
 // Trash schedule — fetched from server for admin editing
 // Fallback used if API not yet available
@@ -15,7 +15,7 @@ let trashSchedule = {
   1: 'Ali',     // Monday
   2: null,      // Tuesday
   3: 'Amir',    // Wednesday
-  4: 'Gokol',   // Thursday
+  4: 'Gokul',   // Thursday
   5: 'Sattar',  // Friday
   6: 'Arad',    // Saturday
   0: 'Aien',    // Sunday

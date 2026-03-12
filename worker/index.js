@@ -2,7 +2,7 @@
 // Flatmate Portal — Cloudflare Worker (ES Modules)
 // ============================================================
 
-const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
+const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokul'];
 
 // ── Trash‑day schedule (day‑of‑week → flatmate) ─────────────
 // 0 = Sunday … 6 = Saturday
@@ -11,7 +11,7 @@ const TRASH_SCHEDULE = {
   1: 'Ali',     // Monday
   2: null,      // Tuesday  — no collection
   3: 'Amir',    // Wednesday
-  4: 'Gokol',   // Thursday
+  4: 'Gokul',   // Thursday
   5: 'Sattar',  // Friday
   6: 'Arad',    // Saturday
 };
