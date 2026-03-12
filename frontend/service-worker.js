@@ -3,13 +3,13 @@
    Handles caching for offline support and push notifications.
    ============================================================ */
 
-const CACHE_NAME = 'flatmate-portal-v1';
+const CACHE_NAME = 'flatmate-portal-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/style.css',
-  '/manifest.json',
+  '/Flatmate-Portal/',
+  '/Flatmate-Portal/index.html',
+  '/Flatmate-Portal/app.js',
+  '/Flatmate-Portal/style.css',
+  '/Flatmate-Portal/manifest.json',
 ];
 
 // ── Install: pre-cache shell assets ──────────────────────────

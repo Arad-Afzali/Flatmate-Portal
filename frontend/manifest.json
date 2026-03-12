@@ -2,9 +2,10 @@
   "name": "Flatmate Portal",
   "short_name": "Flatmate",
   "description": "Shared flat task management for the squad",
-  "start_url": "/",
+  "start_url": "/Flatmate-Portal/",
+  "scope": "/Flatmate-Portal/",
   "display": "standalone",
-  "background_color": "#0f0e2a",
+  "background_color": "#0d0d1f",
   "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
   "icons": [
