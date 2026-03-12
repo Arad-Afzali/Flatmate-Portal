@@ -48,46 +48,73 @@ function init() {
 
 // ── Service Worker Registration ──────────────────────────────
 async function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.register('service-worker.js');
+  if (!('serviceWorker' in navigator)) return;
 
-      // Check for an update every time the page loads
-      reg.update();
+  let reg;
+  try {
+    reg = await navigator.serviceWorker.register('service-worker.js');
+  } catch (e) {
+    console.warn('SW registration failed:', e);
+    return;
+  }
 
-      // New SW found — show update button when it's ready to activate
-      const showUpdateBtn = () => {
-        document.getElementById('update-btn').classList.remove('hidden');
-      };
+  const showUpdateBtn = () => {
+    document.getElementById('update-btn').classList.remove('hidden');
+  };
 
-      if (reg.waiting) {
+  // ── SW-based detection (works when service-worker.js itself changes) ──
+  const checkWaiting = () => {
+    if (reg.waiting && navigator.serviceWorker.controller) showUpdateBtn();
+  };
+  checkWaiting();
+  reg.addEventListener('updatefound', () => {
+    const newSW = reg.installing;
+    if (!newSW) return;
+    newSW.addEventListener('statechange', () => {
+      if (newSW.state === 'installed' && navigator.serviceWorker.controller) showUpdateBtn();
+    });
+  });
+  try { await reg.update(); checkWaiting(); } catch (e) {}
+
+  // ── ETag-based detection (works for HTML/JS/CSS changes, reliable on iOS) ──
+  // HEAD requests bypass the SW cache (our SW only intercepts GET), so this
+  // always hits the real server and gets a fresh ETag.
+  let freshEtag = null;
+  try {
+    const res = await fetch(location.href, { method: 'HEAD', cache: 'no-store' });
+    freshEtag = res.headers.get('etag') || res.headers.get('last-modified');
+    if (freshEtag) {
+      const stored = localStorage.getItem('app-etag');
+      if (!stored) {
+        localStorage.setItem('app-etag', freshEtag);
+      } else if (stored !== freshEtag) {
         showUpdateBtn();
       }
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            showUpdateBtn();
-          }
-        });
-      });
-
-      // Wire update button — tell SW to skip waiting, then reload
-      document.getElementById('update-btn').onclick = () => {
-        const sw = reg.waiting;
-        if (sw) {
-          sw.postMessage('SKIP_WAITING');
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-          }, { once: true });
-        } else {
-          window.location.reload();
-        }
-      };
-    } catch (e) {
-      console.warn('SW registration failed:', e);
     }
-  }
+  } catch (e) {}
+
+  // ── Wire update button ────────────────────────────────────────────────
+  document.getElementById('update-btn').onclick = async () => {
+    // Persist the new etag so button doesn't reappear until next real update
+    if (freshEtag) localStorage.setItem('app-etag', freshEtag);
+
+    // If SW has a waiting update, activate it first
+    if (reg.waiting) {
+      reg.waiting.postMessage('SKIP_WAITING');
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      }, { once: true });
+      return;
+    }
+
+    // Otherwise unregister SW, clear all caches, and do a hard reload
+    try {
+      await reg.unregister();
+      const names = await caches.keys();
+      await Promise.all(names.map(n => caches.delete(n)));
+    } catch (e) {}
+    window.location.reload();
+  };
 }
 
 // ── Login / Logout ───────────────────────────────────────────
