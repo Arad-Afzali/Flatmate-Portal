@@ -54,10 +54,6 @@
         <div class="admin-row">
           <button id="admin-test-btn" class="btn-admin">🔔 Send Test Notification</button>
         </div>
-        <div class="admin-row">
-          <input type="text" id="admin-announce-input" placeholder="Broadcast a message to everyone…" maxlength="160">
-          <button id="admin-announce-btn" class="btn-admin">Send</button>
-        </div>
         <p id="admin-status" class="admin-status hidden"></p>
       </section>
 
@@ -78,7 +74,7 @@
           <div class="form-row">
             <select id="inp-category">
               <option value="general">General</option>
-              <option value="grocery">Grocery</option>
+              <option value="grocery" selected>Grocery</option>
               <option value="repair">Repair</option>
             </select>
             <label class="checkbox-label emergency-check">
@@ -108,6 +104,17 @@
       <section class="card">
         <h2>🏆 Leaderboard</h2>
         <div id="leaderboard" class="leaderboard"></div>
+      </section>
+
+      <!-- ── Broadcast / Announcements ── -->
+      <section class="card">
+        <h2>📢 Broadcast</h2>
+        <div class="broadcast-row">
+          <input type="text" id="broadcast-input" placeholder="Send a message to everyone…" maxlength="200">
+          <button id="broadcast-btn" class="btn-primary broadcast-send">Send</button>
+        </div>
+        <ul id="announcements-list" class="announcements-list"></ul>
+        <p id="announcements-empty" class="empty-msg hidden">No announcements yet</p>
       </section>
 
     </main>

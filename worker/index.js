@@ -272,8 +272,35 @@ async function handleRequest(request, env, ctx) {
     return json({ success: true, username, token, isAdmin: username === 'Arad' });
   }
 
+  // ── GET /announcements ──────────────────────────────────
+  if (method === 'GET' && path === '/announcements') {
+    const { results } = await db.prepare(
+      'SELECT id, message, sent_by, created_at FROM announcements ORDER BY created_at DESC LIMIT 5'
+    ).all();
+    return json({ announcements: results || [] });
+  }
+
+  // ── POST /announcements ─────────────────────────────────
+  if (method === 'POST' && path === '/announcements') {
+    const user = await getUserFromRequest(request, env);
+    if (!user) return json({ error: 'Unauthorized' }, 401);
+    const body = await request.json();
+    const message = (body.message || '').trim().slice(0, 200);
+    if (!message) return json({ error: 'message required' }, 400);
+    await db.prepare('INSERT INTO announcements (message, sent_by) VALUES (?, ?)').bind(message, user).run();
+    ctx.waitUntil(broadcastPush(db, {
+      title: `\uD83D\uDCE2 ${user}`,
+      body: message,
+      isEmergency: false,
+    }, env));
+    return json({ success: true });
+  }
+
   // ── GET /items ──────────────────────────────────────────
   if (method === 'GET' && path === '/items') {
+    // Auto-delete completed tasks older than 1 hour
+    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-1 hour')").run();
+
     const pending = await db.prepare(
       "SELECT * FROM tasks WHERE status = 'pending' ORDER BY is_emergency DESC, created_at DESC"
     ).all();
@@ -357,7 +384,7 @@ async function handleRequest(request, env, ctx) {
     if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
 
     await db.prepare(
-      "UPDATE tasks SET status = 'completed', completed_by = ? WHERE id = ?"
+      "UPDATE tasks SET status = 'completed', completed_by = ?, completed_at = datetime('now') WHERE id = ?"
     ).bind(username, id).run();
 
     return json({ success: true });
@@ -381,20 +408,6 @@ async function handleRequest(request, env, ctx) {
       isEmergency: false,
     }, env);
     return json({ success: true, message: 'Test notification sent to all subscribers' });
-  }
-  // ── POST /admin/announce ─────────────────────────────────
-  if (method === 'POST' && path === '/admin/announce') {
-    const user = await getUserFromRequest(request, env);
-    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
-    const body = await request.json();
-    const message = (body.message || '').trim().slice(0, 200);
-    if (!message) return json({ error: 'message required' }, 400);
-    await broadcastPush(db, {
-      title: '📢 Announcement',
-      body: message,
-      isEmergency: false,
-    }, env);
-    return json({ success: true });
   }
   // ── POST /subscribe ────────────────────────────────────
   if (method === 'POST' && path === '/subscribe') {
@@ -428,11 +441,16 @@ export default {
 
   // ── Cron Trigger — Trash Reminder ────────────────────────
   async scheduled(event, env, ctx) {
+    const db = env.DB;
+
+    // Auto-delete completed tasks older than 1 hour
+    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-1 hour')").run();
+
     const day = new Date().getDay(); // 0‑6
     const username = TRASH_SCHEDULE[day];
     if (!username) return;
 
-    await targetedPush(env.DB, username, {
+    await targetedPush(db, username, {
       title: '🗑️ Trash Reminder',
       body: `Hey ${username}, it's your turn to take out the trash today!`,
       isEmergency: false,

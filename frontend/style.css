@@ -430,6 +430,47 @@ body {
 .admin-status.success { background: #052e16; color: #86efac; border: 1px solid #166534; }
 .admin-status.error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
 
+/* ── Broadcast / Announcements ─────────────── */
+.broadcast-row {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+.broadcast-row input {
+  flex: 1;
+  padding: .6rem .85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .9rem;
+}
+.broadcast-send {
+  width: auto !important;
+  padding: .6rem 1.1rem !important;
+  white-space: nowrap;
+}
+.announcements-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.announcement-item {
+  padding: .65rem .85rem;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+.announcement-item.truncatable { cursor: pointer; }
+.announcement-item .ann-full { display: none; }
+.announcement-item.expanded .ann-preview { display: none; }
+.announcement-item.expanded .ann-full { display: block; }
+.ann-meta {
+  margin-top: .3rem;
+  font-size: .72rem;
+  color: var(--text-muted);
+}
+
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 420px) {
   .app-header h1 { font-size: .95rem; }

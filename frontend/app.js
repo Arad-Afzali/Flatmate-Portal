@@ -136,10 +136,6 @@ function showDashboard() {
   if (currentUser === ADMIN_USER) {
     adminSection.classList.remove('hidden');
     document.getElementById('admin-test-btn').onclick = adminTestNotify;
-    document.getElementById('admin-announce-btn').onclick = adminAnnounce;
-    document.getElementById('admin-announce-input').onkeydown = (e) => {
-      if (e.key === 'Enter') adminAnnounce();
-    };
   } else {
     adminSection.classList.add('hidden');
   }
@@ -151,8 +147,15 @@ function showDashboard() {
   document.getElementById('edit-save').onclick = saveEdit;
   document.getElementById('edit-cancel').onclick = closeEditModal;
 
+  // Broadcast wiring
+  document.getElementById('broadcast-btn').onclick = sendBroadcast;
+  document.getElementById('broadcast-input').onkeydown = (e) => {
+    if (e.key === 'Enter') sendBroadcast();
+  };
+
   renderTrashSchedule();
   loadItems();
+  loadAnnouncements();
 }
 
 // ── API Helpers ──────────────────────────────────────────────
@@ -370,16 +373,17 @@ async function adminTestNotify() {
   }
 }
 
-async function adminAnnounce() {
-  const input = document.getElementById('admin-announce-input');
+// ── Broadcast (all users) ────────────────────────────────────
+async function sendBroadcast() {
+  const input = document.getElementById('broadcast-input');
   const msg = input.value.trim();
   if (!msg) return;
 
-  const btn = document.getElementById('admin-announce-btn');
+  const btn = document.getElementById('broadcast-btn');
   btn.disabled = true;
   btn.textContent = 'Sending…';
   try {
-    const res = await fetch(`${API_BASE}/admin/announce`, {
+    const res = await fetch(`${API_BASE}/announcements`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authToken}`,
@@ -389,17 +393,46 @@ async function adminAnnounce() {
     });
     const data = await res.json();
     if (data.success) {
-      showAdminStatus('Announcement sent ✓', 'success');
       input.value = '';
-    } else {
-      showAdminStatus('Failed: ' + (data.error || 'unknown error'), 'error');
+      loadAnnouncements();
     }
   } catch (e) {
-    showAdminStatus('Network error', 'error');
+    console.error('Broadcast failed:', e);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Send';
   }
+}
+
+async function loadAnnouncements() {
+  try {
+    const data = await api('/announcements');
+    renderAnnouncements(data.announcements || []);
+  } catch (e) {
+    console.error('Failed to load announcements:', e);
+  }
+}
+
+function renderAnnouncements(items) {
+  const list = document.getElementById('announcements-list');
+  const empty = document.getElementById('announcements-empty');
+  if (!items || items.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = items.map(a => {
+    const long = a.message.length > 80;
+    const preview = long ? escapeHtml(a.message.slice(0, 80)) + '…' : escapeHtml(a.message);
+    const full = escapeHtml(a.message);
+    return `
+      <li class="announcement-item${long ? ' truncatable' : ''}" ${long ? "onclick=\"this.classList.toggle('expanded')\"" : ''}>
+        <div class="ann-preview">${preview}</div>
+        ${long ? `<div class="ann-full">${full}</div>` : ''}
+        <div class="ann-meta">${escapeHtml(a.sent_by)} · ${timeAgo(a.created_at)}</div>
+      </li>`;
+  }).join('');
 }
 
 function showAdminStatus(msg, type) {
