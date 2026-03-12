@@ -302,7 +302,7 @@ async function handleRequest(request, env, ctx) {
     await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-24 hours')").run();
 
     const pending = await db.prepare(
-      "SELECT * FROM tasks WHERE status = 'pending' ORDER BY is_emergency DESC, created_at DESC"
+      "SELECT * FROM tasks WHERE status IN ('pending', 'in_progress') ORDER BY is_emergency DESC, created_at DESC"
     ).all();
     const completed = await db.prepare(
       "SELECT * FROM tasks WHERE status = 'completed' ORDER BY created_at DESC"
@@ -343,6 +343,19 @@ async function handleRequest(request, env, ctx) {
     }, env));
 
     return json({ success: true, id: result.meta.last_row_id }, 201);
+  }
+
+  // ── PATCH /items/:id/pickup ──────────────────────────────
+  const pickupMatch = path.match(/^\/items\/(\d+)\/pickup$/);
+  if (method === 'PATCH' && pickupMatch) {
+    const id = parseInt(pickupMatch[1], 10);
+    const body = await request.json();
+    const { username } = body;
+    if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
+    await db.prepare(
+      "UPDATE tasks SET status = 'in_progress', picked_up_by = ? WHERE id = ? AND status = 'pending'"
+    ).bind(username, id).run();
+    return json({ success: true });
   }
 
   // ── PUT /items/:id ──────────────────────────────────────

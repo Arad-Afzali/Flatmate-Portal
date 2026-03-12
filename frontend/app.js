@@ -147,6 +147,22 @@ function showDashboard() {
   document.getElementById('edit-save').onclick = saveEdit;
   document.getElementById('edit-cancel').onclick = closeEditModal;
 
+  // FAB & Add Modal
+  document.getElementById('fab-btn').onclick = openAddModal;
+  document.getElementById('add-modal-close').onclick = closeAddModal;
+  document.getElementById('add-modal').onclick = (e) => {
+    if (e.target === document.getElementById('add-modal')) closeAddModal();
+  };
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-item').classList.toggle('hidden', btn.dataset.tab !== 'item');
+      document.getElementById('tab-announce').classList.toggle('hidden', btn.dataset.tab !== 'announce');
+    };
+  });
+
   // Broadcast wiring
   document.getElementById('broadcast-btn').onclick = sendBroadcast;
   document.getElementById('broadcast-input').onkeydown = (e) => {
@@ -196,17 +212,34 @@ function renderPending(items) {
     const emergencyIcon = isEmergency ? '<span class="emergency-icon">🚨</span>' : '';
     const tagClass = `tag-${t.category}`;
     const ago = timeAgo(t.created_at);
+    const inProgress = t.status === 'in_progress';
+    const pickedBy = t.picked_up_by || '';
+
+    let actionBtn;
+    if (inProgress && pickedBy === currentUser) {
+      actionBtn = `<button class="btn-complete" onclick="completeItem(${t.id})" title="Complete">✓ Done</button>`;
+    } else if (inProgress) {
+      actionBtn = '';
+    } else {
+      actionBtn = `<button class="btn-imonit" onclick="pickUpItem(${t.id})" title="I'm on it!">🙋 I'm on it!</button>`;
+    }
+
+    const progressBadge = inProgress
+      ? `<span class="badge-inprogress">⏳ ${escapeHtml(pickedBy)} is on it!</span>`
+      : '';
 
     return `
-      <li class="task-item${isEmergency ? ' emergency' : ''}">
+      <li class="task-item${isEmergency ? ' emergency' : ''}${inProgress ? ' in-progress' : ''}">
         <div class="task-header">
           <span class="task-title">${emergencyIcon}${escapeHtml(t.title)}</span>
           <div class="task-actions">
-            <button class="btn-complete" onclick="completeItem(${t.id})" title="Complete">✓</button>
+            ${actionBtn}
+            ${!inProgress ? `<button class="btn-complete" onclick="completeItem(${t.id})" title="Complete">✓</button>` : ''}
             <button onclick="openEditModal(${t.id}, '${escapeAttr(t.title)}', '${t.category}', ${isEmergency})" title="Edit">✏️</button>
             <button class="btn-delete" onclick="deleteItem(${t.id})" title="Delete">✕</button>
           </div>
         </div>
+        ${progressBadge}
         <div class="task-meta">
           <span class="tag ${tagClass}">${t.category}</span>
           <span>by ${escapeHtml(t.requested_by)}</span>
@@ -255,6 +288,13 @@ function renderLeaderboard(lb) {
 }
 
 // ── Add Item ─────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('add-modal').classList.remove('hidden');
+}
+function closeAddModal() {
+  document.getElementById('add-modal').classList.add('hidden');
+}
+
 async function addItem(e) {
   e.preventDefault();
   const title = document.getElementById('inp-title').value.trim();
@@ -270,9 +310,23 @@ async function addItem(e) {
     });
     document.getElementById('inp-title').value = '';
     document.getElementById('inp-emergency').checked = false;
+    closeAddModal();
     loadItems();
   } catch (e) {
     console.error('Add failed:', e);
+  }
+}
+
+// ── Pick Up / Complete / Delete ──────────────────────────────
+async function pickUpItem(id) {
+  try {
+    await api(`/items/${id}/pickup`, {
+      method: 'PATCH',
+      body: JSON.stringify({ username: currentUser }),
+    });
+    loadItems();
+  } catch (e) {
+    console.error('Pickup failed:', e);
   }
 }
 
@@ -394,13 +448,14 @@ async function sendBroadcast() {
     const data = await res.json();
     if (data.success) {
       input.value = '';
+      closeAddModal();
       loadAnnouncements();
     }
   } catch (e) {
     console.error('Broadcast failed:', e);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Send';
+    btn.textContent = 'Send Announcement';
   }
 }
 

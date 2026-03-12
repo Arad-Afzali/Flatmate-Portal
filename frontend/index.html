@@ -57,6 +57,13 @@
         <p id="admin-status" class="admin-status hidden"></p>
       </section>
 
+      <!-- ── Broadcast / Announcements ── -->
+      <section class="card">
+        <h2>📢 Broadcast</h2>
+        <ul id="announcements-list" class="announcements-list"></ul>
+        <p id="announcements-empty" class="empty-msg hidden">No announcements yet</p>
+      </section>
+
       <!-- ── Trash Schedule ── -->
       <section class="card">
         <h2>🗑️ Trash Collection Schedule</h2>
@@ -64,26 +71,6 @@
           <thead><tr><th>Day</th><th>Responsible</th></tr></thead>
           <tbody></tbody>
         </table>
-      </section>
-
-      <!-- ── Add Item ── -->
-      <section class="card" id="add-section">
-        <h2>➕ Add New Item</h2>
-        <form id="add-form">
-          <input type="text" id="inp-title" placeholder="What needs to be done?" required maxlength="200">
-          <div class="form-row">
-            <select id="inp-category">
-              <option value="general">General</option>
-              <option value="grocery" selected>Grocery</option>
-              <option value="repair">Repair</option>
-            </select>
-            <label class="checkbox-label emergency-check">
-              <input type="checkbox" id="inp-emergency">
-              <span>⚠️ URGENT</span>
-            </label>
-          </div>
-          <button type="submit" class="btn-primary">Add Item</button>
-        </form>
       </section>
 
       <!-- ── Pending ── -->
@@ -106,18 +93,48 @@
         <div id="leaderboard" class="leaderboard"></div>
       </section>
 
-      <!-- ── Broadcast / Announcements ── -->
-      <section class="card">
-        <h2>📢 Broadcast</h2>
-        <div class="broadcast-row">
-          <input type="text" id="broadcast-input" placeholder="Send a message to everyone…" maxlength="200">
-          <button id="broadcast-btn" class="btn-primary broadcast-send">Send</button>
-        </div>
-        <ul id="announcements-list" class="announcements-list"></ul>
-        <p id="announcements-empty" class="empty-msg hidden">No announcements yet</p>
-      </section>
-
     </main>
+
+    <!-- Floating Action Button -->
+    <button id="fab-btn" class="fab" title="Add">＋</button>
+  </div>
+
+  <!-- ═══ ADD MODAL ═══ -->
+  <div id="add-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>➕ New&hellip;</h2>
+        <button id="add-modal-close" class="modal-close">&times;</button>
+      </div>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="item">Item</button>
+        <button class="tab-btn" data-tab="announce">Announcement</button>
+      </div>
+      <!-- Tab: Add Item -->
+      <div id="tab-item" class="tab-content">
+        <form id="add-form">
+          <input type="text" id="inp-title" placeholder="What needs to be done?" required maxlength="200">
+          <div class="form-row">
+            <select id="inp-category">
+              <option value="general">General</option>
+              <option value="grocery" selected>Grocery</option>
+              <option value="repair">Repair</option>
+            </select>
+            <label class="checkbox-label emergency-check">
+              <input type="checkbox" id="inp-emergency">
+              <span>⚠️ URGENT</span>
+            </label>
+          </div>
+          <button type="submit" class="btn-primary">Add Item</button>
+        </form>
+      </div>
+      <!-- Tab: Announcement -->
+      <div id="tab-announce" class="tab-content hidden">
+        <input type="text" id="broadcast-input" placeholder="Send a message to everyone…" maxlength="200">
+        <button id="broadcast-btn" class="btn-primary" style="margin-top:.5rem">Send Announcement</button>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ EDIT MODAL ═══ -->
