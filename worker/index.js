@@ -451,6 +451,22 @@ async function handleRequest(request, env, ctx) {
     return json({ success: true });
   }
 
+  // ── POST /admin/test-trash ─────────────────────────────
+  if (method === 'POST' && path === '/admin/test-trash') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const schedule = await getSchedule(db);
+    const day = new Date().getDay();
+    const target = schedule[day];
+    if (!target) return json({ success: false, message: 'No one assigned for today' });
+    await targetedPush(db, target, {
+      title: '🗑️ Trash Reminder',
+      body: `Hey ${target}, it's your turn to take out the trash today!`,
+      isEmergency: false,
+    }, env);
+    return json({ success: true, message: `Trash reminder sent to ${target}` });
+  }
+
   // ── POST /admin/test-notify ────────────────────────────
   if (method === 'POST' && path === '/admin/test-notify') {
     const user = await getUserFromRequest(request, env);
