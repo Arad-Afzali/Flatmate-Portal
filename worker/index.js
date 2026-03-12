@@ -451,6 +451,21 @@ async function handleRequest(request, env, ctx) {
     return json({ success: true });
   }
 
+  // ── POST /admin/send-trash ─────────────────────────────
+  if (method === 'POST' && path === '/admin/send-trash') {
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
+    const body = await request.json();
+    const target = body.username;
+    if (!target || !ALLOWED_USERS.includes(target)) return json({ error: 'Valid username required' }, 400);
+    await targetedPush(db, target, {
+      title: '🗑️ Trash Reminder',
+      body: `Hey ${target}, it's your turn to take out the trash today!`,
+      isEmergency: false,
+    }, env);
+    return json({ success: true });
+  }
+
   // ── POST /admin/test-notify ────────────────────────────
   if (method === 'POST' && path === '/admin/test-notify') {
     const user = await getUserFromRequest(request, env);

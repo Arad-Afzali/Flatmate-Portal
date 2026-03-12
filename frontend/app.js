@@ -50,7 +50,40 @@ function init() {
 async function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('service-worker.js');
+      const reg = await navigator.serviceWorker.register('service-worker.js');
+
+      // Check for an update every time the page loads
+      reg.update();
+
+      // New SW found — show update button when it's ready to activate
+      const showUpdateBtn = () => {
+        document.getElementById('update-btn').classList.remove('hidden');
+      };
+
+      if (reg.waiting) {
+        showUpdateBtn();
+      }
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBtn();
+          }
+        });
+      });
+
+      // Wire update button — tell SW to skip waiting, then reload
+      document.getElementById('update-btn').onclick = () => {
+        const sw = reg.waiting;
+        if (sw) {
+          sw.postMessage('SKIP_WAITING');
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            window.location.reload();
+          }, { once: true });
+        } else {
+          window.location.reload();
+        }
+      };
     } catch (e) {
       console.warn('SW registration failed:', e);
     }

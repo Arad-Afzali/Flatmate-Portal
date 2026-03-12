@@ -126,6 +126,20 @@ body {
   font-weight: 600;
 }
 
+.btn-update {
+  background: #fbbf24;
+  color: #1a1a2e;
+  border: none;
+  padding: .3rem .75rem;
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.btn-update:hover { background: #f59e0b; }
+
 .btn-icon {
   background: none;
   border: none;
