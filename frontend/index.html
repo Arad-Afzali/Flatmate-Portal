@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flatmate Portal</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>🏠 Flatmate Portal</h1>
+      <p class="login-subtitle">Select your name to continue</p>
+      <select id="user-select">
+        <option value="">Choose your name…</option>
+        <option value="Arad">Arad</option>
+        <option value="Amir">Amir</option>
+        <option value="Aien">Aien</option>
+        <option value="Sattar">Sattar</option>
+        <option value="Ali">Ali</option>
+        <option value="Gokol">Gokol</option>
+      </select>
+      <button id="login-btn" disabled>Login</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN DASHBOARD ═══ -->
+  <div id="dashboard" class="screen hidden">
+
+    <!-- Header -->
+    <header class="app-header">
+      <h1>🏠 Flatmate Portal</h1>
+      <div class="header-actions">
+        <span id="current-user" class="badge"></span>
+        <button id="notify-btn" class="btn-icon" title="Enable Notifications">🔔</button>
+        <button id="logout-btn" class="btn-icon" title="Logout">↩️</button>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- ── Add Item ── -->
+      <section class="card" id="add-section">
+        <h2>➕ Add New Item</h2>
+        <form id="add-form">
+          <input type="text" id="inp-title" placeholder="What needs to be done?" required maxlength="200">
+          <div class="form-row">
+            <select id="inp-category">
+              <option value="general">General</option>
+              <option value="grocery">Grocery</option>
+              <option value="repair">Repair</option>
+            </select>
+            <label class="checkbox-label emergency-check">
+              <input type="checkbox" id="inp-emergency">
+              <span>⚠️ URGENT</span>
+            </label>
+          </div>
+          <button type="submit" class="btn-primary">Add Item</button>
+        </form>
+      </section>
+
+      <!-- ── Pending ── -->
+      <section class="card">
+        <h2>📋 Pending Items <span id="pending-count" class="count-badge">0</span></h2>
+        <ul id="pending-list" class="task-list"></ul>
+        <p id="pending-empty" class="empty-msg hidden">No pending items 🎉</p>
+      </section>
+
+      <!-- ── Completed ── -->
+      <section class="card">
+        <h2>✅ Completed <span id="completed-count" class="count-badge">0</span></h2>
+        <ul id="completed-list" class="task-list"></ul>
+        <p id="completed-empty" class="empty-msg hidden">Nothing completed yet</p>
+      </section>
+
+      <!-- ── Leaderboard ── -->
+      <section class="card">
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboard" class="leaderboard"></div>
+      </section>
+
+      <!-- ── Trash Schedule ── -->
+      <section class="card">
+        <h2>🗑️ Trash Collection Schedule</h2>
+        <table id="trash-schedule" class="schedule-table">
+          <thead><tr><th>Day</th><th>Responsible</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ═══ EDIT MODAL ═══ -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2>✏️ Edit Item</h2>
+      <input type="hidden" id="edit-id">
+      <input type="text" id="edit-title" placeholder="Title" required maxlength="200">
+      <select id="edit-category">
+        <option value="general">General</option>
+        <option value="grocery">Grocery</option>
+        <option value="repair">Repair</option>
+      </select>
+      <label class="checkbox-label emergency-check">
+        <input type="checkbox" id="edit-emergency">
+        <span>⚠️ URGENT</span>
+      </label>
+      <div class="modal-actions">
+        <button id="edit-save" class="btn-primary">Save</button>
+        <button id="edit-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
