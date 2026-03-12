@@ -298,8 +298,8 @@ async function handleRequest(request, env, ctx) {
 
   // ── GET /items ──────────────────────────────────────────
   if (method === 'GET' && path === '/items') {
-    // Auto-delete completed tasks older than 1 hour
-    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-1 hour')").run();
+    // Auto-delete completed tasks older than 24 hours
+    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-24 hours')").run();
 
     const pending = await db.prepare(
       "SELECT * FROM tasks WHERE status = 'pending' ORDER BY is_emergency DESC, created_at DESC"
@@ -443,8 +443,8 @@ export default {
   async scheduled(event, env, ctx) {
     const db = env.DB;
 
-    // Auto-delete completed tasks older than 1 hour
-    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-1 hour')").run();
+    // Auto-delete completed tasks older than 24 hours
+    await db.prepare("DELETE FROM tasks WHERE status = 'completed' AND completed_at IS NOT NULL AND completed_at < datetime('now', '-24 hours')").run();
 
     const day = new Date().getDay(); // 0‑6
     const username = TRASH_SCHEDULE[day];
