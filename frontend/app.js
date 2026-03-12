@@ -397,12 +397,10 @@ async function saveEdit() {
 function renderTrashSchedule() {
   const container = document.getElementById('trash-schedule');
   const today = new Date().getDay();
-  container.innerHTML = DAY_ORDER.map(i => {
+  container.innerHTML = DAY_ORDER.filter(i => trashSchedule[i]).map(i => {
     const name = trashSchedule[i];
     const isToday = i === today;
     const label = DAY_NAMES[i];
-    if (!name) return `<div class="trash-pill empty${isToday ? ' today' : ''}">
-      <span class="tp-day">${label}</span><span class="tp-name">—</span></div>`;
     return `<div class="trash-pill${isToday ? ' today' : ''}">
       <span class="tp-day">${label}</span><span class="tp-name">${escapeHtml(name)}</span></div>`;
   }).join('');
