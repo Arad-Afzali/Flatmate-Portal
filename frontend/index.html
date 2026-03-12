@@ -48,6 +48,19 @@
 
     <main class="container">
 
+      <!-- ── Admin Panel (Arad only — hidden for others) ── -->
+      <section class="card admin-card hidden" id="admin-section">
+        <h2>🔐 Admin Panel</h2>
+        <div class="admin-row">
+          <button id="admin-test-btn" class="btn-admin">🔔 Send Test Notification</button>
+        </div>
+        <div class="admin-row">
+          <input type="text" id="admin-announce-input" placeholder="Broadcast a message to everyone…" maxlength="160">
+          <button id="admin-announce-btn" class="btn-admin">Send</button>
+        </div>
+        <p id="admin-status" class="admin-status hidden"></p>
+      </section>
+
       <!-- ── Trash Schedule ── -->
       <section class="card">
         <h2>🗑️ Trash Collection Schedule</h2>

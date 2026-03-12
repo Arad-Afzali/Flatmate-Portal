@@ -327,6 +327,37 @@ async function handleRequest(request, env, ctx) {
     return json({ success: true });
   }
 
+  // ── POST /admin/test-notify ────────────────────────────
+  // Protected by ADMIN_TOKEN secret. Broadcasts a test push to all subscribers.
+  if (method === 'POST' && path === '/admin/test-notify') {
+    const authHeader = request.headers.get('Authorization') || '';
+    if (!env.ADMIN_TOKEN || authHeader !== `Bearer ${env.ADMIN_TOKEN}`) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    await broadcastPush(db, {
+      title: '🔔 Test Notification',
+      body: 'Push notifications are working correctly!',
+      isEmergency: false,
+    }, env);
+    return json({ success: true, message: 'Test notification sent to all subscribers' });
+  }
+  // ── POST /admin/announce ─────────────────────────────────
+  // Broadcast a custom message to all subscribers.
+  if (method === 'POST' && path === '/admin/announce') {
+    const authHeader = request.headers.get('Authorization') || '';
+    if (!env.ADMIN_TOKEN || authHeader !== `Bearer ${env.ADMIN_TOKEN}`) {
+      return json({ error: 'Unauthorized' }, 401);
+    }
+    const body = await request.json();
+    const message = (body.message || '').trim().slice(0, 200);
+    if (!message) return json({ error: 'message required' }, 400);
+    await broadcastPush(db, {
+      title: '📢 Announcement',
+      body: message,
+      isEmergency: false,
+    }, env);
+    return json({ success: true });
+  }
   // ── POST /subscribe ────────────────────────────────────
   if (method === 'POST' && path === '/subscribe') {
     const body = await request.json();

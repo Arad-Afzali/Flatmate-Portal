@@ -5,6 +5,8 @@
 // ── CONFIG — fill these in after deploying the Worker ────────
 const API_BASE = 'https://flatmate-portal-worker.holimoli.workers.dev'; // no trailing slash
 const VAPID_PUBLIC_KEY = 'BDbtLlG3btEkaUMeho4kFoh2fou-DZ9P1CydGzmMqE9IMfPsJsVjawIk1yyRHPKjLhNS3ySmdFRwTx_CJyQBU7g';
+const ADMIN_TOKEN = '4e232c6f35e7b324520f96ae94877fdc0c9276c25a97a98f'; // Arad-only
+const ADMIN_USER = 'Arad';
 
 const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
 
@@ -117,6 +119,19 @@ function showDashboard() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   document.getElementById('current-user').textContent = currentUser;
+
+  // Show admin panel only for Arad
+  const adminSection = document.getElementById('admin-section');
+  if (currentUser === ADMIN_USER) {
+    adminSection.classList.remove('hidden');
+    document.getElementById('admin-test-btn').onclick = adminTestNotify;
+    document.getElementById('admin-announce-btn').onclick = adminAnnounce;
+    document.getElementById('admin-announce-input').onkeydown = (e) => {
+      if (e.key === 'Enter') adminAnnounce();
+    };
+  } else {
+    adminSection.classList.add('hidden');
+  }
 
   // Wire up buttons
   document.getElementById('logout-btn').onclick = logout;
@@ -315,6 +330,73 @@ function renderTrashSchedule() {
     const cls = i === today ? ' class="today"' : '';
     return `<tr${cls}><td>${day}</td><td>${escapeHtml(name)}${i === today ? ' ← today' : ''}</td></tr>`;
   }).join('');
+}
+
+// ── Admin Functions (Arad only) ──────────────────────────────
+async function adminTestNotify() {
+  const btn = document.getElementById('admin-test-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${API_BASE}/admin/test-notify`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await res.json();
+    if (data.success) {
+      showAdminStatus('Test notification sent to all subscribers ✓', 'success');
+    } else {
+      showAdminStatus('Failed: ' + (data.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    showAdminStatus('Network error', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔔 Send Test Notification';
+  }
+}
+
+async function adminAnnounce() {
+  const input = document.getElementById('admin-announce-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const btn = document.getElementById('admin-announce-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${API_BASE}/admin/announce`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message: msg }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showAdminStatus('Announcement sent ✓', 'success');
+      input.value = '';
+    } else {
+      showAdminStatus('Failed: ' + (data.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    showAdminStatus('Network error', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send';
+  }
+}
+
+function showAdminStatus(msg, type) {
+  const el = document.getElementById('admin-status');
+  el.textContent = msg;
+  el.className = 'admin-status ' + type;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
 // ── Push Notification Opt‑in ─────────────────────────────────

@@ -381,6 +381,55 @@ body {
 }
 .modal-actions button { flex: 1; }
 
+/* ── Admin Panel ────────────────────────────── */
+.admin-card {
+  border: 1.5px solid #4338ca;
+  background: #0d0d1f;
+  color: #e0e7ff;
+}
+.admin-card h2 { color: #a5b4fc; }
+
+.admin-row {
+  display: flex;
+  gap: .5rem;
+  margin-top: .6rem;
+}
+
+.admin-row input {
+  flex: 1;
+  padding: .55rem .75rem;
+  border: 1px solid #3730a3;
+  border-radius: 8px;
+  background: #1e1b4b;
+  color: #e0e7ff;
+  font-size: .9rem;
+}
+.admin-row input::placeholder { color: #6366f1; }
+
+.btn-admin {
+  background: #4338ca;
+  color: #e0e7ff;
+  border: none;
+  padding: .55rem 1rem;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.btn-admin:hover:not(:disabled) { background: #6366f1; }
+.btn-admin:disabled { opacity: .5; cursor: not-allowed; }
+
+.admin-status {
+  margin-top: .5rem;
+  font-size: .82rem;
+  padding: .35rem .65rem;
+  border-radius: 6px;
+}
+.admin-status.success { background: #052e16; color: #86efac; border: 1px solid #166534; }
+.admin-status.error   { background: #450a0a; color: #fca5a5; border: 1px solid #991b1b; }
+
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 420px) {
   .app-header h1 { font-size: .95rem; }
