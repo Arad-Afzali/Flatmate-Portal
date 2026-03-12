@@ -15,4 +15,4 @@ database_id = "cd9970e5-ebe6-4ebc-8cb0-8b3233e5ef15"
 
 # ── Cron Trigger (Trash Reminder) ────────────────────────────
 [triggers]
-crons = ["0 8 * * *", "0 16 * * *", "0 20 * * *"]   # 9 AM, 5 PM, 9 PM Rome (CET / UTC+1)
+crons = ["0 8 * * *", "0 19 * * *"]   # 9 AM, 8 PM Rome (CET / UTC+1)

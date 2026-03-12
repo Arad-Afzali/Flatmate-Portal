@@ -139,7 +139,6 @@ function showDashboard() {
     adminSection.classList.remove('hidden');
     document.getElementById('admin-toggle').onclick = toggleAdminPanel;
     document.getElementById('admin-test-btn').onclick = adminTestNotify;
-    document.getElementById('admin-test-trash-btn').onclick = adminTestTrash;
     document.getElementById('admin-save-schedule').onclick = adminSaveSchedule;
     document.getElementById('admin-clear-ann').onclick = adminClearAnnouncements;
     document.getElementById('admin-reset-lb').onclick = adminResetLeaderboard;
@@ -578,29 +577,6 @@ async function renderAdminActivityLog() {
         <span class="admin-act-time">${timeAgo(a.created_at)}</span>
       </li>`).join('');
   } catch (e) { list.innerHTML = '<li class="empty-msg">Failed to load</li>'; }
-}
-
-async function adminTestTrash() {
-  const btn = document.getElementById('admin-test-trash-btn');
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
-  try {
-    const res = await fetch(`${API_BASE}/admin/test-trash`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-    if (data.success) {
-      showAdminStatus(data.message + ' ✓', 'success');
-    } else {
-      showAdminStatus(data.message || 'Failed', 'error');
-    }
-  } catch (e) {
-    showAdminStatus('Network error', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🗑️ Test Trash';
-  }
 }
 
 async function adminTestNotify() {
