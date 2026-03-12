@@ -340,11 +340,12 @@ async function handleRequest(request, env, ctx) {
 
   // ── POST /items ─────────────────────────────────────────
   if (method === 'POST' && path === '/items') {
+    const username = await getUserFromRequest(request, env);
+    if (!username) return json({ error: 'Unauthorized' }, 401);
     const body = await request.json();
-    const { title, category, is_emergency, username } = body;
+    const { title, category, is_emergency } = body;
 
-    if (!title || !username) return json({ error: 'title and username required' }, 400);
-    if (!ALLOWED_USERS.includes(username)) return json({ error: 'User not allowed' }, 403);
+    if (!title) return json({ error: 'title required' }, 400);
 
     const cat = ['grocery', 'repair', 'general'].includes(category) ? category : 'general';
     const emergency = is_emergency ? 1 : 0;
@@ -370,10 +371,9 @@ async function handleRequest(request, env, ctx) {
   // ── PATCH /items/:id/pickup ──────────────────────────────
   const pickupMatch = path.match(/^\/items\/(\d+)\/pickup$/);
   if (method === 'PATCH' && pickupMatch) {
+    const username = await getUserFromRequest(request, env);
+    if (!username) return json({ error: 'Unauthorized' }, 401);
     const id = parseInt(pickupMatch[1], 10);
-    const body = await request.json();
-    const { username } = body;
-    if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
     const pickupTask = await db.prepare('SELECT title FROM tasks WHERE id = ?').bind(id).first();
     await db.prepare(
       "UPDATE tasks SET status = 'in_progress', picked_up_by = ? WHERE id = ? AND status = 'pending'"
@@ -385,11 +385,11 @@ async function handleRequest(request, env, ctx) {
   // ── PUT /items/:id ──────────────────────────────────────
   const putMatch = path.match(/^\/items\/(\d+)$/);
   if (method === 'PUT' && putMatch) {
+    const username = await getUserFromRequest(request, env);
+    if (!username) return json({ error: 'Unauthorized' }, 401);
     const id = parseInt(putMatch[1], 10);
     const body = await request.json();
-    const { title, category, is_emergency, username } = body;
-
-    if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
+    const { title, category, is_emergency } = body;
 
     const fields = [];
     const values = [];
@@ -415,11 +415,9 @@ async function handleRequest(request, env, ctx) {
   // ── PATCH /items/:id/complete ───────────────────────────
   const patchMatch = path.match(/^\/items\/(\d+)\/complete$/);
   if (method === 'PATCH' && patchMatch) {
+    const username = await getUserFromRequest(request, env);
+    if (!username) return json({ error: 'Unauthorized' }, 401);
     const id = parseInt(patchMatch[1], 10);
-    const body = await request.json();
-    const { username } = body;
-
-    if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
 
     // Get title for activity log before updating
     const taskRow = await db.prepare('SELECT title FROM tasks WHERE id = ?').bind(id).first();
@@ -442,11 +440,11 @@ async function handleRequest(request, env, ctx) {
   // ── DELETE /items/:id ───────────────────────────────────
   const delMatch = path.match(/^\/items\/(\d+)$/);
   if (method === 'DELETE' && delMatch) {
+    const delUser = await getUserFromRequest(request, env);
+    if (!delUser) return json({ error: 'Unauthorized' }, 401);
     const id = parseInt(delMatch[1], 10);
     const delTask = await db.prepare('SELECT title, requested_by FROM tasks WHERE id = ?').bind(id).first();
     await db.prepare('DELETE FROM tasks WHERE id = ?').bind(id).run();
-    // Try to determine who deleted — from query param or fallback
-    const delUser = url.searchParams.get('user') || (delTask ? delTask.requested_by : 'unknown');
     ctx.waitUntil(logActivity(db, delUser, 'deleted', delTask ? delTask.title : `task #${id}`));
     return json({ success: true });
   }
@@ -563,10 +561,10 @@ async function handleRequest(request, env, ctx) {
 
   // ── POST /subscribe ────────────────────────────────────
   if (method === 'POST' && path === '/subscribe') {
+    const username = await getUserFromRequest(request, env);
+    if (!username) return json({ error: 'Unauthorized' }, 401);
     const body = await request.json();
-    const { username, subscription } = body;
-
-    if (!username || !ALLOWED_USERS.includes(username)) return json({ error: 'Valid username required' }, 403);
+    const { subscription } = body;
     if (!subscription || !subscription.endpoint) return json({ error: 'Invalid subscription' }, 400);
 
     const subStr = JSON.stringify(subscription);

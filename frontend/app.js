@@ -243,9 +243,11 @@ function showDashboard() {
 
 // ── API Helpers ──────────────────────────────────────────────
 async function api(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
   return res.json();
 }
@@ -413,7 +415,7 @@ async function completeItem(id) {
 async function deleteItem(id) {
   if (!confirm('Delete this item?')) return;
   try {
-    await api(`/items/${id}?user=${encodeURIComponent(currentUser)}`, { method: 'DELETE' });
+    await api(`/items/${id}`, { method: 'DELETE' });
     loadItems();
   } catch (e) {
     console.error('Delete failed:', e);
