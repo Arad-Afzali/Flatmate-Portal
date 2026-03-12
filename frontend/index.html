@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#4f46e5">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,7 +17,7 @@
   <div id="login-screen" class="screen">
     <div class="login-card">
       <h1>🏠 Flatmate Portal</h1>
-      <p class="login-subtitle">Select your name to continue</p>
+      <p class="login-subtitle">Select your name &amp; enter your password</p>
       <select id="user-select">
         <option value="">Choose your name…</option>
         <option value="Arad">Arad</option>
@@ -27,6 +27,8 @@
         <option value="Ali">Ali</option>
         <option value="Gokol">Gokol</option>
       </select>
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+      <p id="login-error" class="login-error hidden">Wrong password. Ask Arad for yours.</p>
       <button id="login-btn" disabled>Login</button>
     </div>
   </div>
@@ -45,6 +47,15 @@
     </header>
 
     <main class="container">
+
+      <!-- ── Trash Schedule ── -->
+      <section class="card">
+        <h2>🗑️ Trash Collection Schedule</h2>
+        <table id="trash-schedule" class="schedule-table">
+          <thead><tr><th>Day</th><th>Responsible</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
 
       <!-- ── Add Item ── -->
       <section class="card" id="add-section">
@@ -84,15 +95,6 @@
       <section class="card">
         <h2>🏆 Leaderboard</h2>
         <div id="leaderboard" class="leaderboard"></div>
-      </section>
-
-      <!-- ── Trash Schedule ── -->
-      <section class="card">
-        <h2>🗑️ Trash Collection Schedule</h2>
-        <table id="trash-schedule" class="schedule-table">
-          <thead><tr><th>Day</th><th>Responsible</th></tr></thead>
-          <tbody></tbody>
-        </table>
       </section>
 
     </main>

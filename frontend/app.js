@@ -3,19 +3,32 @@
    ============================================================ */
 
 // ── CONFIG — fill these in after deploying the Worker ────────
-const API_BASE = 'https://flatmate-portal-worker.<YOUR_SUBDOMAIN>.workers.dev'; // no trailing slash
-const VAPID_PUBLIC_KEY = '<YOUR_VAPID_PUBLIC_KEY>'; // base64url 65-byte key
+const API_BASE = 'https://flatmate-portal-worker.holimoli.workers.dev'; // no trailing slash
+const VAPID_PUBLIC_KEY = 'BDbtLlG3btEkaUMeho4kFoh2fou-DZ9P1CydGzmMqE9IMfPsJsVjawIk1yyRHPKjLhNS3ySmdFRwTx_CJyQBU7g';
 
 const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
 
+// ── Passwords — change these before deploying ────────────────
+// Each flatmate has a unique password only you (Arad) distribute.
+// Passwords live only in this file; update them here and redeploy.
+const USER_PASSWORDS = {
+  Arad:   '6e597005',
+  Amir:   '6473ac12',
+  Aien:   '2bc9a001',
+  Sattar: '88d6e2b9',
+  Ali:    '6d38c4bd',
+  Gokol:  '4a1d6e1e',
+};
+
 // Trash schedule (same mapping as the Worker — keep in sync)
+// Only 4 active days; remaining days map to null (no reminder).
 const TRASH_SCHEDULE = {
-  0: 'Arad',    // Sunday
-  1: 'Amir',    // Monday
-  2: 'Aien',    // Tuesday
-  3: 'Sattar',  // Wednesday
-  4: 'Ali',     // Thursday
-  5: 'Gokol',   // Friday
+  0: 'Aien',    // Sunday
+  1: 'Ali',     // Monday
+  2: null,      // Tuesday
+  3: 'Amir',    // Wednesday
+  4: 'Gokol',   // Thursday
+  5: 'Sattar',  // Friday
   6: 'Arad',    // Saturday
 };
 
@@ -55,17 +68,40 @@ function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('dashboard').classList.add('hidden');
 
-  const sel = document.getElementById('user-select');
-  const btn = document.getElementById('login-btn');
+  const sel   = document.getElementById('user-select');
+  const pwd   = document.getElementById('password-input');
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
 
   sel.value = '';
+  pwd.value = '';
+  err.classList.add('hidden');
   btn.disabled = true;
 
-  sel.onchange = () => { btn.disabled = !sel.value; };
+  const checkReady = () => { btn.disabled = !(sel.value && pwd.value); };
+  sel.onchange = checkReady;
+  pwd.oninput  = checkReady;
+
+  // Allow submitting with Enter key from the password field
+  pwd.onkeydown = (e) => { if (e.key === 'Enter' && !btn.disabled) btn.click(); };
+
   btn.onclick = () => {
-    if (!sel.value || !ALLOWED_USERS.includes(sel.value)) return;
-    localStorage.setItem('flatmate_username', sel.value);
-    currentUser = sel.value;
+    const username = sel.value;
+    const password = pwd.value;
+
+    if (!username || !ALLOWED_USERS.includes(username)) return;
+
+    if (USER_PASSWORDS[username] !== password) {
+      err.classList.remove('hidden');
+      pwd.value = '';
+      btn.disabled = true;
+      pwd.focus();
+      return;
+    }
+
+    err.classList.add('hidden');
+    localStorage.setItem('flatmate_username', username);
+    currentUser = username;
     showDashboard();
   };
 }
@@ -272,9 +308,11 @@ function renderTrashSchedule() {
   const tbody = document.querySelector('#trash-schedule tbody');
   const today = new Date().getDay();
 
+  // Only render days that have an assigned person
   tbody.innerHTML = DAY_NAMES.map((day, i) => {
+    const name = TRASH_SCHEDULE[i];
+    if (!name) return '';
     const cls = i === today ? ' class="today"' : '';
-    const name = TRASH_SCHEDULE[i] || '—';
     return `<tr${cls}><td>${day}</td><td>${escapeHtml(name)}${i === today ? ' ← today' : ''}</td></tr>`;
   }).join('');
 }

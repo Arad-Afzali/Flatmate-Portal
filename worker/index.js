@@ -5,14 +5,14 @@
 const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
 
 // ── Trash‑day schedule (day‑of‑week → flatmate) ─────────────
-// 0 = Sunday … 6 = Saturday — fill in your own mapping
+// 0 = Sunday … 6 = Saturday
 const TRASH_SCHEDULE = {
-  0: 'Arad',    // Sunday
-  1: 'Amir',    // Monday
-  2: 'Aien',    // Tuesday
-  3: 'Sattar',  // Wednesday
-  4: 'Ali',     // Thursday
-  5: 'Gokol',   // Friday
+  0: 'Aien',    // Sunday
+  1: 'Ali',     // Monday
+  2: null,      // Tuesday  — no collection
+  3: 'Amir',    // Wednesday
+  4: 'Gokol',   // Thursday
+  5: 'Sattar',  // Friday
   6: 'Arad',    // Saturday
 };
 

@@ -6,7 +6,7 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "flatmate-portal-db"
-database_id = "<YOUR_D1_DATABASE_ID>"          # paste after running: wrangler d1 create flatmate-portal-db
+database_id = "cd9970e5-ebe6-4ebc-8cb0-8b3233e5ef15"
 
 # ── Environment Variables (Secrets — set via `wrangler secret put`) ──
 # VAPID_PUBLIC_KEY   — base64url-encoded 65-byte uncompressed public key
