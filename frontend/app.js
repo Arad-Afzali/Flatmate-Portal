@@ -2,25 +2,12 @@
    Flatmate Portal — Frontend Logic
    ============================================================ */
 
-// ── CONFIG — fill these in after deploying the Worker ────────
+// ── CONFIG ───────────────────────────────────────────────────
 const API_BASE = 'https://flatmate-portal-worker.holimoli.workers.dev'; // no trailing slash
 const VAPID_PUBLIC_KEY = 'BDbtLlG3btEkaUMeho4kFoh2fou-DZ9P1CydGzmMqE9IMfPsJsVjawIk1yyRHPKjLhNS3ySmdFRwTx_CJyQBU7g';
-const ADMIN_TOKEN = '4e232c6f35e7b324520f96ae94877fdc0c9276c25a97a98f'; // Arad-only
 const ADMIN_USER = 'Arad';
 
 const ALLOWED_USERS = ['Arad', 'Amir', 'Aien', 'Sattar', 'Ali', 'Gokol'];
-
-// ── Passwords — change these before deploying ────────────────
-// Each flatmate has a unique password only you (Arad) distribute.
-// Passwords live only in this file; update them here and redeploy.
-const USER_PASSWORDS = {
-  Arad:   '6e597005',
-  Amir:   '6473ac12',
-  Aien:   '2bc9a001',
-  Sattar: '88d6e2b9',
-  Ali:    '6d38c4bd',
-  Gokol:  '4a1d6e1e',
-};
 
 // Trash schedule (same mapping as the Worker — keep in sync)
 // Only 4 active days; remaining days map to null (no reminder).
@@ -37,6 +24,7 @@ const TRASH_SCHEDULE = {
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 let currentUser = null;
+let authToken = null; // HMAC-signed token from the Worker
 
 // ── Initialization ───────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -46,8 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function init() {
   const saved = localStorage.getItem('flatmate_username');
-  if (saved && ALLOWED_USERS.includes(saved)) {
+  const token = localStorage.getItem('flatmate_token');
+  if (saved && token && ALLOWED_USERS.includes(saved)) {
     currentUser = saved;
+    authToken = token;
     showDashboard();
   } else {
     showLogin();
@@ -87,30 +77,51 @@ function showLogin() {
   // Allow submitting with Enter key from the password field
   pwd.onkeydown = (e) => { if (e.key === 'Enter' && !btn.disabled) btn.click(); };
 
-  btn.onclick = () => {
+  btn.onclick = async () => {
     const username = sel.value;
     const password = pwd.value;
 
     if (!username || !ALLOWED_USERS.includes(username)) return;
 
-    if (USER_PASSWORDS[username] !== password) {
-      err.classList.remove('hidden');
-      pwd.value = '';
-      btn.disabled = true;
-      pwd.focus();
-      return;
-    }
+    btn.disabled = true;
+    btn.textContent = 'Logging in…';
 
-    err.classList.add('hidden');
-    localStorage.setItem('flatmate_username', username);
-    currentUser = username;
-    showDashboard();
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        err.classList.remove('hidden');
+        pwd.value = '';
+        pwd.focus();
+        return;
+      }
+
+      err.classList.add('hidden');
+      localStorage.setItem('flatmate_username', username);
+      localStorage.setItem('flatmate_token', data.token);
+      currentUser = username;
+      authToken = data.token;
+      showDashboard();
+    } catch (e) {
+      err.textContent = 'Network error. Try again.';
+      err.classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
   };
 }
 
 function logout() {
   localStorage.removeItem('flatmate_username');
+  localStorage.removeItem('flatmate_token');
   currentUser = null;
+  authToken = null;
   showLogin();
 }
 
@@ -341,7 +352,7 @@ async function adminTestNotify() {
     const res = await fetch(`${API_BASE}/admin/test-notify`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+        'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -371,7 +382,7 @@ async function adminAnnounce() {
     const res = await fetch(`${API_BASE}/admin/announce`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ADMIN_TOKEN}`,
+        'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ message: msg }),

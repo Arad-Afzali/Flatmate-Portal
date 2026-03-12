@@ -36,7 +36,7 @@ function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }
 
@@ -218,6 +218,33 @@ async function targetedPush(db, username, payload, env) {
   if (row) await sendPush(row.subscription_object, payload, env);
 }
 
+// ── Session Token (HMAC-SHA256) ──────────────────────────────
+async function createToken(username, env) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(env.ADMIN_TOKEN), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(username));
+  return `${username}.${toB64Url(sig)}`;
+}
+
+async function verifyToken(token, env) {
+  if (!token) return null;
+  const dot = token.indexOf('.');
+  if (dot === -1) return null;
+  const username = token.slice(0, dot);
+  const expected = await createToken(username, env);
+  if (token !== expected) return null;
+  if (!ALLOWED_USERS.includes(username)) return null;
+  return username;
+}
+
+async function getUserFromRequest(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  return verifyToken(token, env);
+}
+
 // ── Request Router ───────────────────────────────────────────
 async function handleRequest(request, env, ctx) {
   const url = new URL(request.url);
@@ -227,6 +254,23 @@ async function handleRequest(request, env, ctx) {
   if (method === 'OPTIONS') return handleOptions();
 
   const db = env.DB;
+
+  // ── POST /login ─────────────────────────────────────────
+  if (method === 'POST' && path === '/login') {
+    const body = await request.json();
+    const { username, password } = body;
+    if (!username || !password) return json({ error: 'username and password required' }, 400);
+    if (!ALLOWED_USERS.includes(username)) return json({ error: 'Invalid credentials' }, 401);
+
+    // Passwords stored as JSON secret: { "Arad": "...", ... }
+    let passwords;
+    try { passwords = JSON.parse(env.USER_PASSWORDS); } catch { return json({ error: 'Server config error' }, 500); }
+
+    if (passwords[username] !== password) return json({ error: 'Invalid credentials' }, 401);
+
+    const token = await createToken(username, env);
+    return json({ success: true, username, token, isAdmin: username === 'Arad' });
+  }
 
   // ── GET /items ──────────────────────────────────────────
   if (method === 'GET' && path === '/items') {
@@ -328,12 +372,9 @@ async function handleRequest(request, env, ctx) {
   }
 
   // ── POST /admin/test-notify ────────────────────────────
-  // Protected by ADMIN_TOKEN secret. Broadcasts a test push to all subscribers.
   if (method === 'POST' && path === '/admin/test-notify') {
-    const authHeader = request.headers.get('Authorization') || '';
-    if (!env.ADMIN_TOKEN || authHeader !== `Bearer ${env.ADMIN_TOKEN}`) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
     await broadcastPush(db, {
       title: '🔔 Test Notification',
       body: 'Push notifications are working correctly!',
@@ -342,12 +383,9 @@ async function handleRequest(request, env, ctx) {
     return json({ success: true, message: 'Test notification sent to all subscribers' });
   }
   // ── POST /admin/announce ─────────────────────────────────
-  // Broadcast a custom message to all subscribers.
   if (method === 'POST' && path === '/admin/announce') {
-    const authHeader = request.headers.get('Authorization') || '';
-    if (!env.ADMIN_TOKEN || authHeader !== `Bearer ${env.ADMIN_TOKEN}`) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
+    const user = await getUserFromRequest(request, env);
+    if (user !== 'Arad') return json({ error: 'Unauthorized' }, 401);
     const body = await request.json();
     const message = (body.message || '').trim().slice(0, 200);
     if (!message) return json({ error: 'message required' }, 400);
