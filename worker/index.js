@@ -293,7 +293,7 @@ async function handleRequest(request, env, ctx) {
   // ── GET /announcements ──────────────────────────────────
   if (method === 'GET' && path === '/announcements') {
     const { results } = await db.prepare(
-      'SELECT id, message, sent_by, created_at FROM announcements ORDER BY created_at DESC LIMIT 5'
+      'SELECT id, message, sent_by, created_at FROM announcements ORDER BY created_at DESC LIMIT 3'
     ).all();
     return json({ announcements: results || [] });
   }
