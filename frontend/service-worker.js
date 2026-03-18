@@ -3,7 +3,7 @@
    Handles caching for offline support and push notifications.
    ============================================================ */
 
-const CACHE_NAME = 'flatmate-portal-v3';
+const CACHE_NAME = 'flatmate-portal-v4';
 const ASSETS = [
   '/Flatmate-Portal/',
   '/Flatmate-Portal/index.html',

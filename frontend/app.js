@@ -52,7 +52,7 @@ async function registerServiceWorker() {
 
   let reg;
   try {
-    reg = await navigator.serviceWorker.register('service-worker.js');
+    reg = await navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
   } catch (e) {
     console.warn('SW registration failed:', e);
     return;
