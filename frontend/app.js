@@ -76,28 +76,8 @@ async function registerServiceWorker() {
   });
   try { await reg.update(); checkWaiting(); } catch (e) {}
 
-  // ── ETag-based detection (works for HTML/JS/CSS changes, reliable on iOS) ──
-  // HEAD requests bypass the SW cache (our SW only intercepts GET), so this
-  // always hits the real server and gets a fresh ETag.
-  let freshEtag = null;
-  try {
-    const res = await fetch(location.href, { method: 'HEAD', cache: 'no-store' });
-    freshEtag = res.headers.get('etag') || res.headers.get('last-modified');
-    if (freshEtag) {
-      const stored = localStorage.getItem('app-etag');
-      if (!stored) {
-        localStorage.setItem('app-etag', freshEtag);
-      } else if (stored !== freshEtag) {
-        showUpdateBtn();
-      }
-    }
-  } catch (e) {}
-
   // ── Wire update button ────────────────────────────────────────────────
   document.getElementById('update-btn').onclick = async () => {
-    // Persist the new etag so button doesn't reappear until next real update
-    if (freshEtag) localStorage.setItem('app-etag', freshEtag);
-
     // If SW has a waiting update, activate it first
     if (reg.waiting) {
       reg.waiting.postMessage('SKIP_WAITING');
