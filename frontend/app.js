@@ -181,7 +181,6 @@ function showDashboard() {
     document.getElementById('admin-test-btn').onclick = adminTestNotify;
     document.getElementById('admin-save-schedule').onclick = adminSaveSchedule;
     document.getElementById('admin-clear-ann').onclick = adminClearAnnouncements;
-    document.getElementById('admin-reset-lb').onclick = adminResetLeaderboard;
   } else {
     adminSection.classList.add('hidden');
   }
@@ -586,18 +585,7 @@ async function adminAdjustScore(username, delta) {
   } catch (e) { showAdminStatus('Network error', 'error'); }
 }
 
-async function adminResetLeaderboard() {
-  if (!confirm('Reset ALL leaderboard scores to 0?')) return;
-  try {
-    await fetch(`${API_BASE}/admin/leaderboard`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${authToken}` },
-    });
-    renderAdminLeaderboard();
-    loadItems();
-    showAdminStatus('Leaderboard reset ✓', 'success');
-  } catch (e) { showAdminStatus('Network error', 'error'); }
-}
+
 
 // ── Admin Activity Log ───────────────────────────────────────
 async function renderAdminActivityLog() {
@@ -697,7 +685,7 @@ function renderAnnouncements(items) {
   empty.classList.add('hidden');
   list.innerHTML = items.map(a => {
     const long = a.message.length > 80;
-    const preview = long ? escapeHtml(a.message.slice(0, 80)) + '…' : escapeHtml(a.message);
+    const preview = long ? escapeHtml(a.message.slice(0, 80)) + '… <span class="read-more">read more</span>' : escapeHtml(a.message);
     const full = escapeHtml(a.message);
     return `
       <li class="announcement-item${long ? ' truncatable' : ''}" ${long ? "onclick=\"this.classList.toggle('expanded')\"" : ''}>
