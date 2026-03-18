@@ -720,6 +720,11 @@ body {
 .announcement-item .ann-full { display: none; }
 .announcement-item.expanded .ann-preview { display: none; }
 .announcement-item.expanded .ann-full { display: block; }
+.read-more {
+  font-size: .8rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
 .ann-meta {
   margin-top: .3rem;
   font-size: .72rem;
