@@ -1,0 +1,42 @@
+name: Daily D1 Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 2:00 AM UTC daily
+  workflow_dispatch:       # allow manual trigger from GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repo (for wrangler.toml)
+        uses: actions/checkout@v4
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Export D1 database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+        run: |
+          wrangler d1 export flatmate-portal-db \
+            --output backup.sql \
+            --remote
+
+      - name: Push backup to private backup repo
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          BACKUP_REPO: ${{ secrets.BACKUP_REPO }}   # e.g. your-username/flatmate-portal-backups
+        run: |
+          git clone https://x-access-token:${BACKUP_REPO_TOKEN}@github.com/${BACKUP_REPO}.git backup-repo
+
+          FILENAME="backup-$(date -u +%Y-%m-%d).sql"
+          cp backup.sql backup-repo/${FILENAME}
+
+          cd backup-repo
+          git config user.email "backup-bot@github.com"
+          git config user.name "Backup Bot"
+          git add "${FILENAME}"
+          git commit -m "Daily backup ${FILENAME}"
+          git push
