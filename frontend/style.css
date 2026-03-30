@@ -3,6 +3,7 @@
    ============================================================ */
 
 :root {
+  color-scheme: light;
   --primary: #4f46e5;
   --primary-light: #6366f1;
   --bg: #f0f2f5;
@@ -10,9 +11,11 @@
   --text: #1a1a2e;
   --text-muted: #6b7280;
   --border: #e5e7eb;
+  --input-bg: #f0f2f5;
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
+  --accent: #4f46e5;
   --radius: 12px;
 }
 
@@ -62,7 +65,7 @@ body {
 
 .login-card input[type="password"] {
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--input-bg);
   outline: none;
 }
 .login-card input[type="password"]:focus {
@@ -82,7 +85,7 @@ body {
 
 .login-card select {
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--input-bg);
   appearance: auto;
 }
 
@@ -211,7 +214,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: .9rem;
-  background: var(--bg);
+  background: var(--input-bg);
 }
 
 .checkbox-label {
@@ -736,4 +739,52 @@ body {
   .app-header h1 { font-size: .95rem; }
   .container { padding: .75rem; }
   .card { padding: 1rem; }
+}
+
+/* ── Dark mode ─────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0d0d1f;
+    --card: #16162a;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2d2d4e;
+    --input-bg: #1e1b4b;
+    --accent: #818cf8;
+  }
+
+  input, select, textarea {
+    background: var(--input-bg);
+    color: var(--text);
+  }
+
+  .login-error {
+    background: #2d1515;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+  }
+
+  /* category tags */
+  .tag-grocery { background: #052e16; color: #86efac; }
+  .tag-repair  { background: #3b1f00; color: #fcd34d; }
+  .tag-general { background: #1e1b4b; color: #a5b4fc; }
+
+  /* task states */
+  .task-item.emergency        { background: #2d1515; }
+  .task-item.in-progress      { background: #292400; }
+  .task-actions .btn-complete:hover { background: #052e16; }
+  .task-actions .btn-delete:hover   { background: #2d1515; }
+
+  /* in-progress badge */
+  .badge-inprogress {
+    background: #292400;
+    color: #fcd34d;
+    border-color: #78350f;
+  }
+  .btn-imonit       { color: #fcd34d; }
+  .btn-imonit:hover { background: #292400 !important; }
+
+  /* trash schedule today pill */
+  .trash-pill.today { background: #1e1b4b; }
 }

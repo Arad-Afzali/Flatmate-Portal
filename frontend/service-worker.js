@@ -3,7 +3,7 @@
    Handles caching for offline support and push notifications.
    ============================================================ */
 
-const CACHE_NAME = 'flatmate-portal-v4';
+const CACHE_NAME = 'flatmate-portal-v5';
 const ASSETS = [
   '/Flatmate-Portal/',
   '/Flatmate-Portal/index.html',
@@ -59,8 +59,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Flatmate Portal';
   const options = {
     body: data.body || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/Flatmate-Portal/icon-192.png',
+    badge: '/Flatmate-Portal/icon-192.png',
     vibrate: data.isEmergency ? [200, 100, 200, 100, 200] : [100],
     requireInteraction: !!data.isEmergency,
     data,
@@ -75,9 +75,9 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url.includes('/') && 'focus' in client) return client.focus();
+        if (client.url.includes('/Flatmate-Portal/') && 'focus' in client) return client.focus();
       }
-      return clients.openWindow('/');
+      return clients.openWindow('/Flatmate-Portal/');
     }),
   );
 });
