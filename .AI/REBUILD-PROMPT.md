@@ -40,16 +40,25 @@ Exactly 6 hardcoded users: `Arad` (admin), `Amir`, `Aien`, `Sattar`, `Ali`, `Gok
 
 4. **Trash schedule**: Weekly day-of-week → user mapping stored in D1 `kv` table. Cron triggers at 8 AM and 7 PM UTC send targeted push to the assigned user. Admin can edit via UI.
 
-5. **Announcements/Broadcasts**: Any authenticated user can send a message (max 200 chars). Stored in `announcements` table. Latest 3 shown. Push notification to all. Admin can delete individual or clear all.
+5. **Announcements/Broadcasts**: Any authenticated user can send a message (max 200 chars). Stored in `announcements` table. **Latest 3 shown only** (enforced server-side with `LIMIT 3` and client-side with `slice(0, 3)`). Push notification to all. Admin can delete individual or clear all.
 
-6. **Push notifications**:
+6. **Cleaning day reminder**:
+   - Yellow warning banner displayed **above** the Broadcast section on the dashboard
+   - Appears every **2 weeks on Saturday and Sunday** (biweekly cleaning schedule)
+   - Banner text: "🧹 Cleaning Day! It's house cleaning day — let’s make it shine!"
+   - Push notification sent to **all users** on cleaning day mornings via cron
+   - Biweekly cycle determined from a fixed epoch date (a known cleaning Saturday)
+   - Hidden on all other days
+   - Uses yellow/warning color scheme for high visibility
+
+7. **Push notifications**:
    - VAPID JWT generation using ECDSA P-256 (ES256), signed with Web Crypto API
    - Payload encryption: ECDH key exchange + HKDF + AES-128-GCM (RFC 8291 aes128gcm format)
    - Send via POST to subscription endpoint with proper headers
    - Auto-cleanup of expired subscriptions (404/410 responses)
    - Emergency items get `Urgency: high`, triple vibration, `requireInteraction: true`
 
-7. **Admin panel** (visible only to `Arad`):
+8. **Admin panel** (visible only to `Arad`):
    - Collapsible section with dark indigo theme
    - Test notification button
    - Trash schedule editor (7 dropdowns, Mon-Sun)
@@ -57,7 +66,7 @@ Exactly 6 hardcoded users: `Arad` (admin), `Amir`, `Aien`, `Sattar`, `Ali`, `Gok
    - Leaderboard management (per-user +/- buttons)
    - Activity log (last 100 entries)
 
-8. **PWA**:
+9. **PWA**:
    - Service worker: cache-first for same-origin shell assets, passthrough for API
    - Cache versioned (e.g., `flatmate-portal-v5`)
    - Manual update approval: don't call `skipWaiting()` on install
@@ -65,11 +74,11 @@ Exactly 6 hardcoded users: `Arad` (admin), `Amir`, `Aien`, `Sattar`, `Ali`, `Gok
    - Click triggers `SKIP_WAITING` message → page reload
    - Manifest: `display: standalone`, portrait, dark navy bg, indigo theme
 
-9. **Activity logging**: Every write action (`added`, `edited`, `completed`, `deleted`, `picked up`, `broadcast`, `schedule updated`, `leaderboard adjusted`, `leaderboard reset`) logged to `activity_log` table with username, action, detail, timestamp. Admin can view last 100 entries.
+10. **Activity logging**: Every write action (`added`, `edited`, `completed`, `deleted`, `picked up`, `broadcast`, `schedule updated`, `leaderboard adjusted`, `leaderboard reset`) logged to `activity_log` table with username, action, detail, timestamp. Admin can view last 100 entries.
 
-10. **Dark mode**: Automatic via `@media (prefers-color-scheme: dark)` — no toggle. Override all CSS variables for dark theme.
+11. **Dark mode**: Automatic via `@media (prefers-color-scheme: dark)` — no toggle. Override all CSS variables for dark theme.
 
-11. **Daily D1 backup**: GitHub Actions cron at 2 AM UTC, exports D1 to SQL, pushes to private backup repo.
+12. **Daily D1 backup**: GitHub Actions cron at 2 AM UTC, exports D1 to SQL, pushes to private backup repo.
 
 ### Database Schema
 

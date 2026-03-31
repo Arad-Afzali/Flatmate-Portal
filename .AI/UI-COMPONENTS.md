@@ -38,8 +38,15 @@
 │  │  └─ Activity Log (scrollable list)              │   │
 │  └─────────────────────────────────────────────────┘   │
 │                                                         │
-│  ┌──── BROADCAST ──────────────────────────────────┐   │
-│  │  📢 Broadcast                                   │   │
+│  ┌──── CLEANING DAY BANNER (biweekly Sat/Sun only) ───┐   │
+│  │  🧹 Cleaning Day! It's house cleaning day —      │   │
+│  │     let's make it shine!                            │   │
+│  │  (Yellow warning banner, high visibility)            │   │
+│  │  (Push notification sent to all users)               │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                         │
+│  ┌──── BROADCAST ──────────────────────────────────────┐   │
+│  │  📢 Broadcast  (last 3 messages only)              │   │
 │  │  • "House meeting tomorrow"  — Arad · 2h ago    │   │
 │  └─────────────────────────────────────────────────┘   │
 │                                                         │
@@ -180,6 +187,13 @@
 1. In admin panel, sees all users with current scores and +/- buttons
 2. Click + or - to adjust a user's score
 3. PUT `/admin/leaderboard` with `{ username, delta: ±1 }`
+
+### 11. Cleaning Day Reminder
+1. Every 2 weeks, on Saturday and Sunday, a yellow banner appears at the top of the dashboard (above Broadcast)
+2. Banner text: "🧹 Cleaning Day! It's house cleaning day — let's make it shine!"
+3. Push notification is sent to **all users** on cleaning day morning via cron
+4. Banner is automatically hidden on all other days
+5. Biweekly cycle is determined from a fixed epoch date (e.g., a known cleaning Saturday)
 
 ---
 
