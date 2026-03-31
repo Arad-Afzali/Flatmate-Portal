@@ -364,6 +364,9 @@ export default {
     // 1. Auto-delete completed tasks > 24h
     // 2. Read trash schedule
     // 3. Send targeted push to today's assigned user
+    // 4. Check if today is a biweekly cleaning day (Saturday/Sunday)
+    //    - If yes, broadcast push to ALL users: "🧹 Cleaning Day!"
+    //    - Biweekly determined from a fixed epoch Saturday
   },
 };
 ```

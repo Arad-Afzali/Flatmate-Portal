@@ -683,7 +683,8 @@ function renderAnnouncements(items) {
     return;
   }
   empty.classList.add('hidden');
-  list.innerHTML = items.map(a => {
+  const latest = items.slice(0, 3);
+  list.innerHTML = latest.map(a => {
     const long = a.message.length > 80;
     const preview = long ? escapeHtml(a.message.slice(0, 80)) + '… <span class="read-more">read more</span>' : escapeHtml(a.message);
     const full = escapeHtml(a.message);

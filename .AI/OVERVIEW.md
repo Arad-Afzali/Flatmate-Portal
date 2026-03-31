@@ -10,6 +10,7 @@ Flatmate Portal is a **Progressive Web App (PWA)** designed for a shared flat of
 - Push notification system for real-time alerts
 - Automated trash-day reminders via cron
 - Broadcast announcements to all flatmates
+- Biweekly cleaning day reminder (yellow banner + push notifications on Saturday & Sunday)
 - Gamified leaderboard tracking task completions
 - Admin panel for one designated admin user
 

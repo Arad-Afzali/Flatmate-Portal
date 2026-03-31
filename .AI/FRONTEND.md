@@ -49,8 +49,16 @@ Sections in order:
   - Activity log (last 100 entries)
   - Status message area
 
+#### Cleaning Day Banner (`#cleaning-banner`, conditionally visible)
+- Yellow warning-style banner displayed **above** the Broadcast section
+- Appears every **2 weeks on Saturday and Sunday** (biweekly cleaning schedule)
+- Message: "🧹 Cleaning Day! It's house cleaning day — let's make it shine!"
+- Yellow background with dark text for high visibility (uses `--warning` color)
+- Push notification sent to **all users** when cleaning day is active
+- Hidden on all other days
+
 #### Broadcast Section
-- List of latest announcements
+- Shows only the **last 3 messages** (server returns max 3, frontend also enforces `slice(0, 3)`)
 - Empty state message
 
 #### Trash Schedule
@@ -176,6 +184,7 @@ async function api(path, options = {}) {
 - Shows Mon→Sun ordering
 
 #### `renderAnnouncements(items)`
+- **Limits display to last 3 messages** — `items.slice(0, 3)` applied before rendering as a frontend safeguard (backend also enforces `LIMIT 3`)
 - Long messages (>80 chars) truncated with "read more" toggle
 - Click toggles `.expanded` class to show full text
 - Shows sender name and time ago
@@ -188,10 +197,16 @@ async function api(path, options = {}) {
 - **`deleteItem(id)`**: Confirms with `confirm()`, DELETEs `/items/:id`
 - **`saveEdit()`**: PUTs to `/items/:id` with edited fields
 
+### Cleaning Day Banner
+
+- **`renderCleaningBanner()`**: Checks if today is a cleaning day (Saturday or Sunday within the active biweekly cycle). If yes, shows the `#cleaning-banner` element with a yellow warning banner. If not, hides it. Called during `showDashboard()` initialization.
+- **Biweekly logic**: Uses a fixed epoch date to determine odd/even weeks. Cleaning day is active on Saturday and Sunday of every other week.
+- **Push notification**: A cron-triggered push notification is sent to all users on cleaning day mornings (handled server-side).
+
 ### Broadcast & Announcements
 
 - **`sendBroadcast()`**: POSTs message to `/announcements`, on success clears input + calls `closeAddModal()` (since broadcast is in the add modal's announcement tab) + reloads announcements
-- **`loadAnnouncements()`**: Fetches from `/announcements`, calls `renderAnnouncements()`
+- **`loadAnnouncements()`**: Fetches from `/announcements`, calls `renderAnnouncements()` — **only last 3 messages displayed**
 
 ### Admin Functions (Arad only)
 
