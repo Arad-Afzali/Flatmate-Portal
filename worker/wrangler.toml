@@ -1,0 +1,28 @@
+name = "flatmate-portal-worker"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# ── D1 Database Binding ──────────────────────────────────────
+# Create it with `npx wrangler d1 create flatmate-portal-db`
+# and paste the database_id it prints below.
+[[d1_databases]]
+binding = "DB"
+database_name = "flatmate-portal-db"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# ── Flatmates ────────────────────────────────────────────────
+[vars]
+USERS = "Alice,Bob,Charlie,Dana"   # comma-separated login names
+ADMIN_USER = "Alice"               # gets the admin panel; must be in USERS
+
+# ── Secrets (set via `npx wrangler secret put <NAME>`) ───────
+# USER_PASSWORDS     — JSON, e.g. {"Alice":"...","Bob":"..."}
+# SESSION_SECRET     — long random string used to sign login tokens
+# VAPID_PUBLIC_KEY   — base64url-encoded 65-byte uncompressed public key
+# VAPID_PRIVATE_KEY  — base64url-encoded 32-byte private key scalar
+# VAPID_SUBJECT      — e.g. "mailto:you@example.com"
+
+# ── Cron Trigger (Trash Reminder) ────────────────────────────
+# Times are UTC. Change them to suit your time zone.
+[triggers]
+crons = ["0 8 * * *", "0 19 * * *"]

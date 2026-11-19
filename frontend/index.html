@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flatmate Portal</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d0d1f" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══ LOGIN SCREEN ═══ -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>🏠 Flatmate Portal</h1>
+      <p class="login-subtitle">Select your name &amp; enter your password</p>
+      <select id="user-select">
+        <option value="">Choose your name…</option>
+      </select>
+      <input type="password" id="password-input" placeholder="Password" autocomplete="current-password">
+      <p id="login-error" class="login-error hidden">Wrong password. Ask your admin for yours.</p>
+      <button id="login-btn" disabled>Login</button>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN DASHBOARD ═══ -->
+  <div id="dashboard" class="screen hidden">
+
+    <!-- Header -->
+    <header class="app-header">
+      <h1>🏠 Flatmate Portal</h1>
+      <div class="header-actions">
+        <span id="current-user" class="badge"></span>
+        <button id="update-btn" class="btn-update hidden" title="Update available">⬆ Update</button>
+        <button id="notify-btn" class="btn-icon" title="Enable Notifications">🔔</button>
+        <button id="logout-btn" class="btn-icon" title="Logout">↩️</button>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <!-- ── Admin Panel (admin only — hidden for others) ── -->
+      <section class="admin-card hidden" id="admin-section">
+        <div class="admin-header" id="admin-toggle">
+          <span>🔐 Admin</span>
+          <span class="admin-arrow" id="admin-arrow">▶</span>
+        </div>
+        <div class="admin-body hidden" id="admin-body">
+          <div class="admin-row">
+            <button id="admin-test-btn" class="btn-admin">🔔 Test Notification</button>
+          </div>
+
+          <h3 class="admin-subtitle">🗑️ Edit Trash Schedule</h3>
+          <div id="admin-schedule-editor" class="admin-schedule-grid"></div>
+          <button id="admin-save-schedule" class="btn-admin" style="margin-top:.5rem;width:100%">💾 Save Schedule</button>
+
+          <h3 class="admin-subtitle">📢 Manage Broadcasts</h3>
+          <ul id="admin-announcements" class="admin-ann-list"></ul>
+          <button id="admin-clear-ann" class="btn-admin btn-admin-danger" style="margin-top:.5rem;width:100%">🗑 Clear All Broadcasts</button>
+
+          <h3 class="admin-subtitle">🏆 Leaderboard</h3>
+          <div id="admin-leaderboard" class="admin-lb-grid"></div>
+
+          <h3 class="admin-subtitle">📜 Activity Log</h3>
+          <ul id="admin-activity-log" class="admin-activity-list"></ul>
+
+          <p id="admin-status" class="admin-status hidden"></p>
+        </div>
+      </section>
+
+      <!-- ── Broadcast / Announcements ── -->
+      <section class="card">
+        <h2>📢 Broadcast</h2>
+        <ul id="announcements-list" class="announcements-list"></ul>
+        <p id="announcements-empty" class="empty-msg hidden">No announcements yet</p>
+      </section>
+
+      <!-- ── Trash Schedule ── -->
+      <section class="card trash-card">
+        <h2>🗑️ Trash</h2>
+        <div id="trash-schedule" class="trash-pills"></div>
+      </section>
+
+      <!-- ── Pending ── -->
+      <section class="card">
+        <h2>📋 Pending Items <span id="pending-count" class="count-badge">0</span></h2>
+        <ul id="pending-list" class="task-list"></ul>
+        <p id="pending-empty" class="empty-msg hidden">No pending items 🎉</p>
+      </section>
+
+      <!-- ── Completed ── -->
+      <section class="card">
+        <h2>✅ Completed <span id="completed-count" class="count-badge">0</span></h2>
+        <ul id="completed-list" class="task-list"></ul>
+        <p id="completed-empty" class="empty-msg hidden">Nothing completed yet</p>
+      </section>
+
+      <!-- ── Leaderboard ── -->
+      <section class="card">
+        <h2>🏆 Leaderboard</h2>
+        <div id="leaderboard" class="leaderboard"></div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button -->
+    <button id="fab-btn" class="fab" title="Add">＋</button>
+  </div>
+
+  <!-- ═══ ADD MODAL ═══ -->
+  <div id="add-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>➕ New&hellip;</h2>
+        <button id="add-modal-close" class="modal-close">&times;</button>
+      </div>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="item">Item</button>
+        <button class="tab-btn" data-tab="announce">Announcement</button>
+      </div>
+      <!-- Tab: Add Item -->
+      <div id="tab-item" class="tab-content">
+        <form id="add-form">
+          <input type="text" id="inp-title" placeholder="What needs to be done?" required maxlength="200">
+          <div class="form-row">
+            <select id="inp-category">
+              <option value="general">General</option>
+              <option value="grocery" selected>Grocery</option>
+              <option value="repair">Repair</option>
+            </select>
+            <label class="checkbox-label emergency-check">
+              <input type="checkbox" id="inp-emergency">
+              <span>⚠️ URGENT</span>
+            </label>
+          </div>
+          <button type="submit" class="btn-primary">Add Item</button>
+        </form>
+      </div>
+      <!-- Tab: Announcement -->
+      <div id="tab-announce" class="tab-content hidden">
+        <input type="text" id="broadcast-input" placeholder="Send a message to everyone…" maxlength="200">
+        <button id="broadcast-btn" class="btn-primary" style="margin-top:.5rem">Send Announcement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EDIT MODAL ═══ -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2>✏️ Edit Item</h2>
+      <input type="hidden" id="edit-id">
+      <input type="text" id="edit-title" placeholder="Title" required maxlength="200">
+      <select id="edit-category">
+        <option value="general">General</option>
+        <option value="grocery">Grocery</option>
+        <option value="repair">Repair</option>
+      </select>
+      <label class="checkbox-label emergency-check">
+        <input type="checkbox" id="edit-emergency">
+        <span>⚠️ URGENT</span>
+      </label>
+      <div class="modal-actions">
+        <button id="edit-save" class="btn-primary">Save</button>
+        <button id="edit-cancel" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
